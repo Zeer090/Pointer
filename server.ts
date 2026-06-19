@@ -578,4 +578,10 @@ async function startServer() {
   });
 }
 
-startServer();
+// Export app for Vercel serverless
+export default app;
+
+// Only start the server when running directly (not on Vercel)
+if (process.env.VERCEL !== "1") {
+  startServer();
+}
