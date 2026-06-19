@@ -1,0 +1,6 @@
+{
+  "name": "POINTER SYSTEM",
+  "description": "Platform digital terintegrasi untuk Himpunan Mahasiswa (HIMA) POINTER dengan sistem multi-role, multi-divisi, alur persetujuan program kerja, dan modul interaktif per divisi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
