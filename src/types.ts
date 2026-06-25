@@ -10,6 +10,7 @@ export interface User {
   role: "admin" | "divisi" | "mahasiswa";
   division_id: string | null;
   npm: string;
+  jabatan?: string | null;
 }
 
 export interface Division {

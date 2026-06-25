@@ -16,6 +16,7 @@ model User {
   npm         String?
   role        String   @default("mahasiswa")
   division_id String?
+  jabatan     String?
 }
 
 model Division {
