@@ -129,3 +129,12 @@ model Letter {
   handler   String
   file_name String?
 }
+
+model GalleryAlbum {
+  id    String  @id @default(uuid())
+  emoji String  @default("📁")
+  title String
+  link  String?
+  count Int     @default(0)
+  size  String  @default("0 MB")
+}

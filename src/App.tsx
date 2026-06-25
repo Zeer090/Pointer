@@ -64,7 +64,7 @@ export default function App() {
   // Form input states
   const [loginEmail, setLoginEmail] = useState("");
   const [loginError, setLoginError] = useState("");
-
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const [newUName, setNewUName] = useState("");
   const [profEmail, setProfEmail] = useState("");
@@ -157,12 +157,13 @@ export default function App() {
     e.preventDefault();
     if (!loginEmail) return;
     setLoginError("");
+    setIsLoggingIn(true);
 
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail }),
+        body: JSON.stringify({ email: loginEmail.trim() }),
       });
       const retData = await res.json();
       if (res.ok && retData.success) {
@@ -191,6 +192,8 @@ export default function App() {
       }
     } catch (err) {
       setLoginError("Koneksi bermasalah. Periksa server Anda.");
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -320,6 +323,24 @@ export default function App() {
     }
   };
 
+  const handleDeleteAspiration = async (id: string) => {
+    try {
+      const res = await fetch(`/api/aspirations/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        triggerToast("Aspirasi berhasil dihapus!");
+        refreshDatabase();
+      } else {
+        triggerToast("Gagal menghapus aspirasi.");
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("Koneksi gagal.");
+    }
+  };
+
+
   // Add Talenta profiles
   const handleAddTalent = async (
     studentName: string,
@@ -413,6 +434,31 @@ export default function App() {
       console.error(err);
     }
   };
+
+  const handleUpdateProduct = async (
+    id: string,
+    product_name: string,
+    price: number,
+    stock: number,
+  ) => {
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_name, price, stock }),
+      });
+      if (res.ok) {
+        triggerToast("Produk berhasil diperbarui!");
+        refreshDatabase();
+      } else {
+        triggerToast("Gagal memperbarui produk.");
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("Koneksi gagal.");
+    }
+  };
+
 
   // Submit Financial accounting records
   const handleAddFinancial = async (
@@ -548,6 +594,30 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  // Add Medinfo Gallery Album
+  const handleAddGalleryAlbum = async (
+    title: string,
+    emoji: string,
+    link: string
+  ) => {
+    try {
+      const res = await fetch("/api/gallery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, emoji, link }),
+      });
+      if (res.ok) {
+        triggerToast(`Album dokumentasi '${title}' berhasil dibuat!`);
+        refreshDatabase();
+      } else {
+        triggerToast("Gagal membuat album dokumentasi.");
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("Koneksi gagal.");
     }
   };
 
@@ -688,9 +758,10 @@ export default function App() {
                 <button
                   type="submit"
                   id="login-submit"
-                  className="w-full bg-brand-orange hover:bg-brand-orange-hover text-white text-sm font-semibold py-2.5 rounded-lg transition active:scale-95"
+                  disabled={isLoggingIn}
+                  className="w-full bg-brand-orange hover:bg-brand-orange-hover text-white text-sm font-semibold py-2.5 rounded-lg transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Masuk ke Dashboard
+                  {isLoggingIn ? "Memproses..." : "Masuk ke Dashboard"}
                 </button>
               </form>
 
@@ -1415,6 +1486,7 @@ export default function App() {
               users={db.users}
               onUpdateAspiration={handleUpdateAspirationStatus}
               onSubmitAspiration={handleAddAspiration}
+              onDeleteAspiration={handleDeleteAspiration}
             />
           )}
 
@@ -1422,8 +1494,10 @@ export default function App() {
             <MedinfoModule
               announcements={db.announcements}
               calendar={db.content_calendar}
+              gallery={db.gallery_albums || []}
               onSubmitAnnouncement={handleAddAnnouncement}
               onSubmitContentCalendar={handleAddContentCalendar}
+              onSubmitGalleryAlbum={handleAddGalleryAlbum}
             />
           )}
 
@@ -1444,6 +1518,7 @@ export default function App() {
               onCheckout={handleMarketCheckout}
               onAddProduct={handleAddProduct}
               onDeleteProduct={handleDeleteProduct}
+              onUpdateProduct={handleUpdateProduct}
             />
           )}
 
@@ -1477,6 +1552,7 @@ export default function App() {
                 users={db.users}
                 onUpdateAspiration={handleUpdateAspirationStatus}
                 onSubmitAspiration={handleAddAspiration}
+                onDeleteAspiration={handleDeleteAspiration}
               />
             </div>
           )}
@@ -1505,6 +1581,7 @@ export default function App() {
                 onCheckout={handleMarketCheckout}
                 onAddProduct={handleAddProduct}
                 onDeleteProduct={handleDeleteProduct}
+                onUpdateProduct={handleUpdateProduct}
               />
             </div>
           )}

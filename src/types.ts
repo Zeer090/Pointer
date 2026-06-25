@@ -129,6 +129,15 @@ export interface Letter {
   file_name?: string | null;
 }
 
+export interface GalleryAlbum {
+  id: string;
+  emoji: string;
+  title: string;
+  link: string;
+  count: number;
+  size: string;
+}
+
 export interface FullDatabase {
   users: User[];
   divisions: Division[];
@@ -144,4 +153,5 @@ export interface FullDatabase {
   content_calendar: ContentCalendar[];
   activity_logs: ActivityLog[];
   letters?: Letter[];
+  gallery_albums?: GalleryAlbum[];
 }

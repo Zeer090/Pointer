@@ -2,7 +2,12 @@ import express from "express";
 import path from "path";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+
+const prisma = globalForPrisma.prisma || new PrismaClient();
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
@@ -45,20 +50,39 @@ async function logActivity(detail: string, color: string = "orange") {
 // Get full database
 app.get("/api/db", async (req, res) => {
   try {
-    const users = await prisma.user.findMany();
-    const divisions = await prisma.division.findMany();
-    const programs = await prisma.program.findMany({ orderBy: { id: 'desc' } });
-    const aspirations = await prisma.aspiration.findMany({ orderBy: { id: 'desc' } });
-    const talents = await prisma.talent.findMany({ orderBy: { id: 'desc' } });
-    const products = await prisma.product.findMany({ orderBy: { id: 'desc' } });
-    const transactions = await prisma.transaction.findMany({ orderBy: { id: 'desc' } });
-    const financial_reports = await prisma.financialReport.findMany({ orderBy: { id: 'desc' } });
-    const attendances = await prisma.attendance.findMany({ orderBy: { id: 'desc' } });
-    const notulensi = await prisma.notulensi.findMany({ orderBy: { id: 'desc' } });
-    const announcements = await prisma.announcement.findMany({ orderBy: { id: 'desc' } });
-    const content_calendar = await prisma.contentCalendar.findMany({ orderBy: { id: 'desc' } });
-    const activity_logs = await prisma.activityLog.findMany({ orderBy: { id: 'desc' }, take: 30 });
-    const letters = await prisma.letter.findMany({ orderBy: { id: 'desc' } });
+    const [
+      users,
+      divisions,
+      programs,
+      aspirations,
+      talents,
+      products,
+      transactions,
+      financial_reports,
+      attendances,
+      notulensi,
+      announcements,
+      content_calendar,
+      activity_logs,
+      letters,
+      gallery_albums
+    ] = await Promise.all([
+      prisma.user.findMany(),
+      prisma.division.findMany(),
+      prisma.program.findMany({ orderBy: { id: 'desc' } }),
+      prisma.aspiration.findMany({ orderBy: { id: 'desc' } }),
+      prisma.talent.findMany({ orderBy: { id: 'desc' } }),
+      prisma.product.findMany({ orderBy: { id: 'desc' } }),
+      prisma.transaction.findMany({ orderBy: { id: 'desc' } }),
+      prisma.financialReport.findMany({ orderBy: { id: 'desc' } }),
+      prisma.attendance.findMany({ orderBy: { id: 'desc' } }),
+      prisma.notulensi.findMany({ orderBy: { id: 'desc' } }),
+      prisma.announcement.findMany({ orderBy: { id: 'desc' } }),
+      prisma.contentCalendar.findMany({ orderBy: { id: 'desc' } }),
+      prisma.activityLog.findMany({ orderBy: { id: 'desc' }, take: 30 }),
+      prisma.letter.findMany({ orderBy: { id: 'desc' } }),
+      prisma.galleryAlbum.findMany({ orderBy: { id: 'desc' } })
+    ]);
 
     res.json({
       users,
@@ -74,7 +98,8 @@ app.get("/api/db", async (req, res) => {
       announcements,
       content_calendar,
       activity_logs,
-      letters
+      letters,
+      gallery_albums
     });
   } catch (err) {
     console.error(err);
@@ -253,6 +278,18 @@ app.put("/api/aspirations/:id", async (req, res) => {
   }
 });
 
+app.delete("/api/aspirations/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await prisma.aspiration.delete({ where: { id } });
+    await logActivity(`Aspirasi dari ${deleted.student_name} dihapus`, "red");
+    res.json({ success: true });
+  } catch (err) {
+    res.status(404).json({ error: "Aspiration not found or delete failed" });
+  }
+});
+
+
 // Submit / register Student Talent
 app.post("/api/talents", async (req, res) => {
   try {
@@ -304,6 +341,28 @@ app.delete("/api/products/:id", async (req, res) => {
     res.status(404).json({ error: "Product not found" });
   }
 });
+
+app.put("/api/products/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { product_name, price, stock } = req.body;
+    
+    const updated = await prisma.product.update({
+      where: { id },
+      data: {
+        product_name,
+        price: Number(price),
+        stock: Number(stock)
+      }
+    });
+    
+    await logActivity(`Produk '${updated.product_name}' diperbarui (Stok: ${updated.stock}, Harga: Rp ${updated.price.toLocaleString("id")})`, "blue");
+    res.json({ success: true, product: updated });
+  } catch (err) {
+    res.status(404).json({ error: "Product not found or update failed" });
+  }
+});
+
 
 // Store checkout / order system (KIMAS)
 app.post("/api/checkout", async (req, res) => {
@@ -552,6 +611,27 @@ app.post("/api/letters", async (req, res) => {
   }
 });
 
+// Gallery / Doker Albums (Medinfo)
+app.post("/api/gallery", async (req, res) => {
+  try {
+    const { title, emoji, link } = req.body;
+    
+    const newAlbum = await prisma.galleryAlbum.create({
+      data: {
+        title,
+        emoji: emoji || "📁",
+        link: link || "#",
+        count: 0,
+        size: "0 MB"
+      }
+    });
+    
+    await logActivity(`Album dokumentasi baru diunggah: '${title}'`, "blue");
+    res.json({ success: true, album: newAlbum });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to create gallery album" });
+  }
+});
 
 // =====================================
 // VITE OR STATIC MIDDLEWARE SETUP
@@ -585,3 +665,14 @@ export default app;
 if (process.env.VERCEL !== "1") {
   startServer();
 }
+
+// Graceful shutdown for Prisma to prevent connection limit exhaustion during hot-reloads
+process.on("SIGINT", async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});

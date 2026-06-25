@@ -7,13 +7,15 @@ interface PsdamModuleProps {
   users: User[];
   onUpdateAspiration: (id: string, newStatus: "pending" | "processing" | "completed") => void;
   onSubmitAspiration: (name: string, category: string, message: string) => void;
+  onDeleteAspiration?: (id: string) => void;
 }
 
 export default function PsdamModule({
   aspirations,
   users,
   onUpdateAspiration,
-  onSubmitAspiration
+  onSubmitAspiration,
+  onDeleteAspiration
 }: PsdamModuleProps) {
   const [aspName, setAspName] = useState("");
   const [aspCategory, setAspCategory] = useState<any>("Akademik");
@@ -193,6 +195,14 @@ Email : mi@polinela.ac.id
                   >
                     Selesaikan ✓
                   </button>
+                  {onDeleteAspiration && (
+                    <button 
+                      onClick={() => onDeleteAspiration(a.id)}
+                      className="text-[10px] text-red-500 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 px-3 py-1 rounded transition ml-auto"
+                    >
+                      Hapus
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

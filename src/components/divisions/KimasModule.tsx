@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { Product, Transaction } from "../../types";
-import { ShoppingCart, Package, DollarSign, Activity, Trash2, ShoppingBag, CreditCard, ShieldCheck, ImagePlus, X, QrCode } from "lucide-react";
+import { ShoppingCart, Package, DollarSign, Activity, Trash2, ShoppingBag, CreditCard, ShieldCheck, ImagePlus, X, QrCode, Pencil, Check } from "lucide-react";
 import qrisKimasImg from "../../assets/images/qris_kimas.jpg";
 
 interface BuyerIdentity {
@@ -17,6 +17,7 @@ interface KimasModuleProps {
   onCheckout: (items: { id: string; quantity: number }[], identity: BuyerIdentity) => void;
   onAddProduct?: (product_name: string, price: number, stock: number, image: string) => void;
   onDeleteProduct?: (id: string) => void;
+  onUpdateProduct?: (id: string, name: string, price: number, stock: number) => void;
 }
 
 export default function KimasModule({
@@ -25,7 +26,8 @@ export default function KimasModule({
   currentUser,
   onCheckout,
   onAddProduct,
-  onDeleteProduct
+  onDeleteProduct,
+  onUpdateProduct
 }: KimasModuleProps) {
   // Store state for customer's cart
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
@@ -47,6 +49,35 @@ export default function KimasModule({
   const [newProdImage, setNewProdImage] = useState<string>("");
   const [imagePreview, setImagePreview] = useState<string>("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // States for inline editing
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editStock, setEditStock] = useState("");
+
+  const startEditing = (p: Product) => {
+    setEditingId(p.id);
+    setEditName(p.product_name);
+    setEditPrice(String(p.price));
+    setEditStock(String(p.stock));
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditName("");
+    setEditPrice("");
+    setEditStock("");
+  };
+
+  const saveEditing = (id: string) => {
+    if (!editName.trim() || !editPrice || !editStock) return;
+    if (onUpdateProduct) {
+      onUpdateProduct(id, editName, Number(editPrice), Number(editStock));
+    }
+    cancelEditing();
+  };
+
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -477,51 +508,115 @@ export default function KimasModule({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-dark-border">
-                  {products.map((p) => (
-                    <tr key={p.id} className="hover:bg-dark-bg/40 transition">
-                      <td className="p-3 text-white font-semibold">
-                        <div className="flex items-center gap-2">
-                          <ProductImage src={p.image} className="w-10 h-10 rounded" />
-                          <span>{p.product_name}</span>
-                        </div>
-                      </td>
-                      <td className="p-3 text-gray-400 font-mono">Rp {p.price.toLocaleString("id")}</td>
-                      <td className="p-3">
-                        <span className={`inline-block px-2.5 py-0.5 rounded font-mono ${
-                          p.stock <= 5 ? "bg-red-500/10 text-red-400" : "bg-green-500/10 text-green-400"
-                        }`}>
-                          {p.stock}
-                        </span>
-                      </td>
-                      <td className="p-3 font-mono text-gray-400">{p.sold || 0} pcs</td>
-                      <td className="p-3 text-center">
-                        {deleteConfirmId === p.id ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleDeleteProduct(p.id)}
-                              className="text-[10px] px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded font-bold transition"
-                            >
-                              Hapus
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirmId(null)}
-                              className="text-[10px] px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-white rounded font-bold transition"
-                            >
-                              Batal
-                            </button>
+                  {products.map((p) => {
+                    const isEditing = editingId === p.id;
+                    return (
+                      <tr key={p.id} className="hover:bg-dark-bg/40 transition">
+                        <td className="p-3 text-white font-semibold">
+                          <div className="flex items-center gap-2">
+                            <ProductImage src={p.image} className="w-10 h-10 rounded flex-shrink-0" />
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                className="bg-dark-bg border border-dark-border rounded px-2 py-1 text-xs text-white w-full max-w-[160px] focus:outline-none focus:border-brand-orange"
+                                required
+                              />
+                            ) : (
+                              <span>{p.product_name}</span>
+                            )}
                           </div>
-                        ) : (
-                          <button
-                            onClick={() => setDeleteConfirmId(p.id)}
-                            className="text-gray-500 hover:text-red-500 transition p-1.5 rounded hover:bg-red-500/10"
-                            title="Hapus Produk"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="p-3 text-gray-400 font-mono">
+                          {isEditing ? (
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-500 text-[11px]">Rp</span>
+                              <input
+                                type="number"
+                                value={editPrice}
+                                onChange={(e) => setEditPrice(e.target.value)}
+                                className="bg-dark-bg border border-dark-border rounded px-2 py-1 text-xs text-white w-20 font-mono focus:outline-none focus:border-brand-orange"
+                                required
+                              />
+                            </div>
+                          ) : (
+                            <span>Rp {p.price.toLocaleString("id")}</span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              value={editStock}
+                              onChange={(e) => setEditStock(e.target.value)}
+                              className="bg-dark-bg border border-dark-border rounded px-2 py-1 text-xs text-white w-16 font-mono focus:outline-none focus:border-brand-orange"
+                              required
+                            />
+                          ) : (
+                            <span className={`inline-block px-2.5 py-0.5 rounded font-mono ${
+                              p.stock <= 5 ? "bg-red-500/10 text-red-400" : "bg-green-500/10 text-green-400"
+                            }`}>
+                              {p.stock}
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 font-mono text-gray-400">{p.sold || 0} pcs</td>
+                        <td className="p-3 text-center">
+                          {isEditing ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => saveEditing(p.id)}
+                                className="text-green-500 hover:text-green-400 p-1.5 rounded hover:bg-green-500/10 transition"
+                                title="Simpan"
+                              >
+                                <Check size={14} />
+                              </button>
+                              <button
+                                onClick={cancelEditing}
+                                className="text-gray-400 hover:text-white p-1.5 rounded hover:bg-zinc-700 transition"
+                                title="Batal"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ) : deleteConfirmId === p.id ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => handleDeleteProduct(p.id)}
+                                className="text-[10px] px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded font-bold transition"
+                              >
+                                Hapus
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="text-[10px] px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-white rounded font-bold transition"
+                              >
+                                Batal
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => startEditing(p)}
+                                className="text-gray-500 hover:text-brand-orange transition p-1.5 rounded hover:bg-brand-orange/10"
+                                title="Edit Produk"
+                              >
+                                <Pencil size={13} />
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirmId(p.id)}
+                                className="text-gray-500 hover:text-red-500 transition p-1.5 rounded hover:bg-red-500/10"
+                                title="Hapus Produk"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {products.length === 0 && (
                     <tr>
                       <td colSpan={5} className="p-8 text-center text-gray-500">
