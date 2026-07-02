@@ -10,79 +10,89 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   name        String
-  email       String   @unique
+  email       String    @unique
   npm         String?
-  role        String   @default("mahasiswa")
+  role        String    @default("mahasiswa")
   division_id String?
   jabatan     String?
+
+  // Relasi FK → Division (SET NULL jika Division dihapus)
+  division Division? @relation(fields: [division_id], references: [id], onDelete: SetNull)
 }
 
 model Division {
   id   String @id @default(uuid())
   name String
+
+  // Backref relasi
+  users    User[]
+  programs Program[]
 }
 
 model Program {
-  id              String   @id @default(uuid())
+  id              String @id @default(uuid())
   title           String
   description     String
   event_date      String
-  status          String   @default("planning")
-  approval_status String   @default("pending")
+  status          String @default("planning")
+  approval_status String @default("pending")
   division_id     String
-  created_by      String   @default("Anggota")
+  created_by      String @default("Anggota")
+
+  // Relasi FK → Division (RESTRICT — program wajib punya divisi valid)
+  division Division @relation(fields: [division_id], references: [id], onDelete: Restrict)
 }
 
 model Aspiration {
-  id           String   @id @default(uuid())
-  student_name String   @default("Mahasiswa Umum")
-  category     String   @default("Umum")
+  id           String @id @default(uuid())
+  student_name String @default("Mahasiswa Umum")
+  category     String @default("Umum")
   message      String
-  status       String   @default("pending")
+  status       String @default("pending")
   created_at   String
 }
 
 model Talent {
-  id           String   @id @default(uuid())
+  id           String @id @default(uuid())
   student_name String
   talent       String
-  achievement  String   @default("Peserta Perlombaan")
-  certificate  String   @default("Sertifikat_Internal.pdf")
+  achievement  String @default("Peserta Perlombaan")
+  certificate  String @default("Sertifikat_Internal.pdf")
 }
 
 model Product {
-  id           String   @id @default(uuid())
+  id           String @id @default(uuid())
   product_name String
   price        Float
   stock        Int
-  image        String   @default("")
-  sold         Int      @default(0)
+  image        String @default("")
+  sold         Int    @default(0)
 }
 
 model Transaction {
-  id             String   @id @default(uuid())
-  user_id        String
+  id             String @id @default(uuid())
+  user_id        String // soft reference ke User (tanpa FK constraint)
   student_name   String
   total          Float
-  payment_status String   @default("success")
+  payment_status String @default("success")
   items_text     String
   date           String
 }
 
 model FinancialReport {
-  id      String   @id @default(uuid())
+  id      String @id @default(uuid())
   title   String
-  income  Float    @default(0)
-  expense Float    @default(0)
+  income  Float  @default(0)
+  expense Float  @default(0)
   file    String
   type    String
   date    String
 }
 
 model Attendance {
-  id               String   @id @default(uuid())
+  id               String @id @default(uuid())
   event_name       String
   participant_name String
   status           String
@@ -91,7 +101,7 @@ model Attendance {
 }
 
 model Notulensi {
-  id      String   @id @default(uuid())
+  id      String @id @default(uuid())
   title   String
   date    String
   author  String
@@ -99,33 +109,33 @@ model Notulensi {
 }
 
 model Announcement {
-  id       String   @id @default(uuid())
+  id       String @id @default(uuid())
   title    String
   content  String
-  category String   @default("Umum")
+  category String @default("Umum")
   date     String
 }
 
 model ContentCalendar {
-  id            String   @id @default(uuid())
+  id            String @id @default(uuid())
   post_title    String
   platform      String
   schedule_date String
-  status        String   @default("draft")
+  status        String @default("draft")
 }
 
 model ActivityLog {
-  id     String   @id @default(uuid())
+  id     String @id @default(uuid())
   detail String
   time   String
   color  String
 }
 
 model Letter {
-  id        String   @id @default(uuid())
+  id        String  @id @default(uuid())
   num       String
   subject   String
-  type      String   // "Masuk" atau "Keluar"
+  type      String  // "Masuk" atau "Keluar"
   date      String
   handler   String
   file_name String?
