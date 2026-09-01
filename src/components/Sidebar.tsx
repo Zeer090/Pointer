@@ -113,7 +113,7 @@ export default function Sidebar({
         </div>
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="text-gray-500 hover:text-white p-1 rounded-lg transition"
+          className="hidden md:block text-gray-500 hover:text-white p-1 rounded-lg transition"
         >
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>

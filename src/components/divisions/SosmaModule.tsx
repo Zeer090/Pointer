@@ -60,28 +60,28 @@ export default function SosmaModule() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs uppercase font-mono mb-2">Kegiatan Aktif</div>
-          <div className="text-3xl font-display font-bold text-white">5</div>
+          <div className="text-3xl font-display font-bold text-white">0</div>
           <div className="text-xs text-brand-orange mt-2">
-            3 Sedang Tahap Survey
+            0 Sedang Tahap Survey
           </div>
         </div>
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs uppercase font-mono mb-2">Total Donasi Terkumpul</div>
-          <div className="text-3xl font-display font-bold text-white">Rp 6.050.000</div>
+          <div className="text-3xl font-display font-bold text-white">Rp 0</div>
           <div className="text-xs text-green-500 mt-2">
             Tersalurkan Transparan
           </div>
         </div>
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs uppercase font-mono mb-2">Relawan Terdaftar</div>
-          <div className="text-3xl font-display font-bold text-white">{vols.length + 80}</div>
+          <div className="text-3xl font-display font-bold text-white">0</div>
           <div className="text-xs text-blue-400 mt-2">
             Anggota & Mahasiswa Umum
           </div>
         </div>
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs uppercase font-mono mb-2">Desa Binaan HIMA</div>
-          <div className="text-3xl font-display font-bold text-white">1</div>
+          <div className="text-3xl font-display font-bold text-white">0</div>
           <div className="text-xs text-purple-400 mt-2">
             Kerja sama berkelanjutan
           </div>
@@ -210,8 +210,8 @@ export default function SosmaModule() {
               <div key={index} className="bg-dark-bg p-3 border border-dark-border rounded-lg flex items-start justify-between">
                 <div>
                   <div className="font-semibold text-xs text-white">{act.name}</div>
-                  <div className="text-[10px] text-gray-400 mt-1">📍 {act.location}</div>
-                  <div className="text-[9px] text-gray-500 mt-2 font-mono">📅 {act.date}</div>
+                  <div className="text-[10px] text-gray-400 mt-1"> {act.location}</div>
+                  <div className="text-[9px] text-gray-500 mt-2 font-mono"> {act.date}</div>
                 </div>
                 <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${
                   act.status === "Ongoing" ? "bg-brand-orange/15 text-brand-orange" : "bg-blue-500/15 text-blue-400"

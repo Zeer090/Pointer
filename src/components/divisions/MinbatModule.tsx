@@ -57,28 +57,28 @@ export default function MinbatModule({ talents, onSubmitTalent }: MinbatModulePr
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs uppercase font-mono mb-2">Mahasiswa Terdata</div>
-          <div className="text-3xl font-display font-bold text-white">186</div>
+          <div className="text-3xl font-display font-bold text-white">0</div>
           <div className="text-xs text-brand-orange mt-2">
-            75% Total Anggota Terdata
+            0% Total Anggota Terdata
           </div>
         </div>
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs uppercase font-mono mb-2">Total Rekor Prestasi</div>
-          <div className="text-3xl font-display font-bold text-white">{talents.length + 15}</div>
+          <div className="text-3xl font-display font-bold text-white">0</div>
           <div className="text-xs text-green-500 mt-2 flex items-center gap-1">
-            <span>⚽ +4 Medali Emas tahun ini</span>
+            <span> +0 Medali Emas tahun ini</span>
           </div>
         </div>
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs uppercase font-mono mb-2 font-bold text-white">Lomba Berjalan</div>
-          <div className="text-3xl font-display font-bold text-white">12</div>
+          <div className="text-3xl font-display font-bold text-white">0</div>
           <div className="text-xs text-blue-400 mt-2">
             Diikuti delegasi HIMA
           </div>
         </div>
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs uppercase font-mono mb-2">Komunitas Minat</div>
-          <div className="text-3xl font-display font-bold text-white">4</div>
+          <div className="text-3xl font-display font-bold text-white">0</div>
           <div className="text-xs text-purple-400 mt-2">
             Interaksi mingguan reguler
           </div>

@@ -26,10 +26,10 @@ export default function LandingPage({
 
   // Custom mock documentations
   const documentaryPhotos = [
-    { label: "Malam Keakraban Anggota 2026", emoji: "🎪", desc: "Membangun rasa solidaritas dan persaudaraan tanpa batas." },
-    { label: "Workshop Laravel & React Suite", emoji: "💻", desc: "Pengenalan dasar full-stack MERN kepada kader himpunan." },
-    { label: "Pengabdian Sosial Wilayah Pesisir", emoji: "🌱", desc: "Aksi bersih desa, donasi buku pelajaran, dan instalasi lab komputer mini." },
-    { label: "Delegasi Lomba Gemastik XIX", emoji: "🏆", desc: "Mempersiapkan tim terbaik di kancah nasional bergengsi." }
+    { label: "Malam Keakraban Anggota 2026", emoji: "", desc: "Membangun rasa solidaritas dan persaudaraan tanpa batas." },
+    { label: "Workshop Laravel & React Suite", emoji: "", desc: "Pengenalan dasar full-stack MERN kepada kader himpunan." },
+    { label: "Pengabdian Sosial Wilayah Pesisir", emoji: "", desc: "Aksi bersih desa, donasi buku pelajaran, dan instalasi lab komputer mini." },
+    { label: "Delegasi Lomba Gemastik XIX", emoji: "", desc: "Mempersiapkan tim terbaik di kancah nasional bergengsi." }
   ];
 
   return (
@@ -110,19 +110,19 @@ export default function LandingPage({
           {/* TELEMETRY STATS GRID */}
           <div className="pt-16 max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 border-t border-dark-border/60">
             <div className="space-y-1">
-              <div className="font-display font-extrabold text-3xl md:text-5xl text-brand-orange">247</div>
+              <div className="font-display font-extrabold text-3xl md:text-5xl text-brand-orange">0</div>
               <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest">Kombatan Aktif</div>
             </div>
             <div className="space-y-1">
-              <div className="font-display font-extrabold text-3xl md:text-5xl text-white">7</div>
+              <div className="font-display font-extrabold text-3xl md:text-5xl text-white">0</div>
               <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest">Divisi Utama</div>
             </div>
             <div className="space-y-1">
-              <div className="font-display font-extrabold text-3xl md:text-5xl text-brand-orange">38</div>
+              <div className="font-display font-extrabold text-3xl md:text-5xl text-brand-orange">0</div>
               <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest">Program Kerja</div>
             </div>
             <div className="space-y-1">
-              <div className="font-display font-extrabold text-3xl md:text-5xl text-white">92%</div>
+              <div className="font-display font-extrabold text-3xl md:text-5xl text-white">0%</div>
               <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest">Lolos Evaluasi</div>
             </div>
           </div>
@@ -146,7 +146,7 @@ export default function LandingPage({
               </div>
               <h3 className="font-display font-bold text-xl text-white">Visi Utama Organisasi</h3>
               <p className="text-gray-400 text-xs md:text-sm leading-relaxed">
-                Membangun departemen/himpunan yang adaptif, futuristik, dan terdepan dalam mewadahi inovasi sains teknologi informasi mahasiswa, menghasilkan kader berintegritas tinggi dengan orientasi pengabdian masyarakat nyata.
+                Menjadi organisasi mahasiswa Manajemen Informatika yang aktif, kreatif, dan profesional dalam mengembangkan kompetensi dan inovasi, serta membentuk mahasiswa yang mampu berorganisasi secara baik dan bertanggung jawab.
               </p>
             </div>
           </div>
@@ -161,15 +161,19 @@ export default function LandingPage({
               <ul className="text-gray-400 text-xs md:text-sm space-y-3 font-sans">
                 <li className="flex items-start gap-2">
                   <span className="text-brand-orange font-bold text-xs mt-0.5">01.</span>
-                  <span>Menyelenggarakan program pelatihan pemrograman industri modern guna pematangan aspek teknis (hard skills) seluruh mahasiswa.</span>
+                  <span>Melatih dan membiasakan mahasiswa berorganisasi secara benar melalui sistem kerja yang terstruktur, beretika, dan bertanggung jawab.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-brand-orange font-bold text-xs mt-0.5">02.</span>
-                  <span>Membentuk koridor advokasi responsif yang menjamin sirkulasi aspirasi mahasiswa terjalin solutif dengan birokrat kampus.</span>
+                  <span>Mengembangkan sumber daya dan kompetensi mahasiswa melalui pembinaan, dan karya nyata di bidang informatika.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-brand-orange font-bold text-xs mt-0.5">03.</span>
-                  <span>Menginisiasi unit profit mandiri berbasis kewirausahaan teknologi guna ketahanan dana kegiatan internal organisasi.</span>
+                  <span>Memfasilitasi peningkatan kemampuan mahasiswa melalui pembelajaran terapan dan pengembangan keterampilan secara berkelanjutan.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-brand-orange font-bold text-xs mt-0.5">04.</span>
+                  <span>Mewujudkan tata kelola organisasi yang profesional, transparan, dan berdampak sosial melalui pengelolaan media, administrasi, dan kegiatan pengabdian masyarakat.</span>
                 </li>
               </ul>
             </div>
@@ -189,7 +193,9 @@ export default function LandingPage({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-6">
-            {divisions.map((div) => {
+            {divisions
+              .filter((div) => div.name.toLowerCase() !== "humas")
+              .map((div) => {
               const divisionLogos: Record<string, string> = {
                 "div-psdam": divPsdam,
                 "div-medinfo": divMedinfo,
@@ -207,16 +213,16 @@ export default function LandingPage({
                   className="bg-dark-surface border border-zinc-800/80 rounded-2xl p-6 space-y-4 hover:border-brand-orange/40 hover:bg-zinc-800/40 cursor-pointer transition flex flex-col justify-between"
                 >
                   <div className="space-y-3">
-                    <div className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center justify-center p-1.5 shadow-inner select-none transition-transform hover:scale-105 duration-300">
+                    <div className="w-16 h-16 flex items-center justify-center select-none transition-transform hover:scale-110 duration-300">
                       {divisionLogos[div.id] ? (
                         <img
                           src={divisionLogos[div.id]}
                           alt={`${div.name} Logo`}
-                          className="w-full h-full object-contain filter drop-shadow-[0_1px_4px_rgba(249,115,22,0.25)]"
+                          className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(249,115,22,0.3)]"
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <span className="text-xl">⚙️</span>
+                        <span className="text-2xl">️</span>
                       )}
                     </div>
                     <h3 className="font-display font-bold text-sm text-white tracking-tight uppercase">
@@ -254,13 +260,13 @@ export default function LandingPage({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
           {programs.slice(0, 3).map((p) => {
             const icons: Record<string, string> = {
-              "div-psdam": "📚",
-              "div-medinfo": "🎨",
-              "div-minbat": "🏅",
-              "div-sosma": "🌱",
-              "div-kimas": "🛍️",
-              "div-keuangan": "💰",
-              "div-administrasi": "📋"
+              "div-psdam": "",
+              "div-medinfo": "",
+              "div-minbat": "",
+              "div-sosma": "",
+              "div-kimas": "️",
+              "div-keuangan": "",
+              "div-administrasi": ""
             };
 
             return (
@@ -277,7 +283,7 @@ export default function LandingPage({
                   </div>
 
                   <h3 className="font-display font-bold text-base text-white leading-normal flex items-start gap-2">
-                    <span className="text-xl leading-none mt-0.5">{icons[p.division_id] || "📚"}</span>
+                    <span className="text-xl leading-none mt-0.5">{icons[p.division_id] || ""}</span>
                     <span>{p.title}</span>
                   </h3>
 

@@ -676,14 +676,7 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
   return (
     <div className="space-y-6">
       {/* STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
-          <div className="text-gray-400 text-xs font-mono uppercase mb-2">Total Agenda Rapat</div>
-          <div className="text-3xl font-display font-bold text-white">18</div>
-          <div className="text-xs text-brand-orange mt-2 flex items-center gap-1">
-            <Calendar size={12} /> Konsistensi terjadwal
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs font-mono uppercase mb-2">Persuratan Arsip</div>
           <div className="text-3xl font-display font-bold text-white">{letters.length} Berkas</div>
@@ -1163,7 +1156,7 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
                   <div className="space-y-1">
                     <h4 className="font-semibold text-white text-sm">{ag.title}</h4>
                     <div className="text-xs text-gray-400">Tempat: {ag.loc}</div>
-                    <div className="text-[10px] text-gray-500 font-mono mt-1">📅 {ag.date} · {ag.time}</div>
+                    <div className="text-[10px] text-gray-500 font-mono mt-1"> {ag.date} · {ag.time}</div>
                   </div>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ag.status === "Sudah Dekat" ? "bg-red-500/10 text-red-400 border border-red-500/10" :
                       ag.status === "Persiapan" ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/10" :
@@ -1184,11 +1177,11 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
             </h3>
             <div className="space-y-3 font-mono text-[11px] text-gray-400 leading-relaxed">
               <div className="bg-dark-bg p-3 border border-dark-border rounded-lg">
-                <span className="text-red-400 font-bold">⚠️ SEGERA GABUNG:</span>
+                <span className="text-red-400 font-bold">️ SEGERA GABUNG:</span>
                 <p className="mt-1">Rapat pleno pertengahan kepengurusan akan dimulai dalam <b>30 menit</b> lagi. Harap segenap ketua divisi hadir.</p>
               </div>
               <div className="bg-dark-bg p-3 border border-dark-border rounded-lg">
-                <span className="text-blue-400 font-bold">📅 SEGERA SELESAIKAN:</span>
+                <span className="text-blue-400 font-bold"> SEGERA SELESAIKAN:</span>
                 <p className="mt-1">Penyusunan laporan pertanggungjawaban (LPJ) keuangan proker 'Workshop Web Dev' harus diupload akhir pekan ini.</p>
               </div>
             </div>

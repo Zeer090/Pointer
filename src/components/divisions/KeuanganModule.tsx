@@ -57,7 +57,7 @@ export default function KeuanganModule({ financials, onSubmitFinancial }: Keuang
       ====================================================
       Dokumen ini sah dirilis secara digital oleh Sistem Keuangan POINTER.
     `;
-    alert(`📄 [SIMULASI DOWNLOAD PDF]\n\nMelakukan export laporan arus kas ke berkas 'POINTER_Financial_Report.pdf':\n\n${printContent}`);
+    alert(` [SIMULASI DOWNLOAD PDF]\n\nMelakukan export laporan arus kas ke berkas 'POINTER_Financial_Report.pdf':\n\n${printContent}`);
   };
 
   return (

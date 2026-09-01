@@ -63,22 +63,22 @@ export default function PsdamModule({
       targetAudience = `seluruh Anggota Divisi ${meetingDivision || "..."}`;
     }
 
-    const template = `📢 ✨ Assalamu’alaikum Warahmatullahi Wabarakatuh ✨
+    const template = `  Assalamu’alaikum Warahmatullahi Wabarakatuh 
 
 Diberitahukan kepada ${targetAudience}, bahwa akan dilaksanakan Rapat, yang akan diselenggarakan pada:
 
-🗓️ Hari & Tanggal : ${formattedDate}
-⏰ Waktu : ${meetingTime || "[Waktu]"} WIB – selesai
-*📍Tempat : ${meetingLocation || "[Tempat]"}
-📝 Kegiatan : ${kegiatan}
+️ Hari & Tanggal : ${formattedDate}
+ Waktu : ${meetingTime || "[Waktu]"} WIB – selesai
+*Tempat : ${meetingLocation || "[Tempat]"}
+ Kegiatan : ${kegiatan}
 
-📌 Catatan : Peserta datang 5 menit lebih awal dari waktu yang di tentukan dan menggunakan pakaian bebas dan sopan
+ Catatan : Peserta datang 5 menit lebih awal dari waktu yang di tentukan dan menggunakan pakaian bebas dan sopan
 
 Sehubungan dengan hal tersebut, ${targetAudience} wajib hadir tepat waktu.
 
 Demikian pemberitahuan ini disampaikan, atas perhatian dan kehadirannya diucapkan terima kasih.
 
-✨ Wassalamu’alaikum Warahmatullahi Wabarakatuh ✨ 🙏
+ Wassalamu’alaikum Warahmatullahi Wabarakatuh  
 
 Portal Media MI Polinela
 Instagram : @mi_polinela
@@ -128,7 +128,7 @@ Email : mi@polinela.ac.id
             {aspirations.filter(a => a.status === "processing").length}
           </div>
           <div className="text-xs text-yellow-500 mt-2 flex items-center gap-1">
-            <span>⚡ Selang penyelesaian</span>
+            <span> Selang penyelesaian</span>
           </div>
         </div>
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5 relative overflow-hidden">
@@ -142,9 +142,9 @@ Email : mi@polinela.ac.id
         </div>
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5 relative overflow-hidden">
           <div className="text-gray-400 text-xs uppercase font-mono tracking-wider mb-2">Tingkat Pengembangan</div>
-          <div className="text-3xl font-display font-bold text-white">94%</div>
+          <div className="text-3xl font-display font-bold text-white">0%</div>
           <div className="text-xs text-blue-400 mt-2">
-            28 Anggota baru teruji
+            0 Anggota baru teruji
           </div>
         </div>
       </div>

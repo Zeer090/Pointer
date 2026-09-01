@@ -185,7 +185,7 @@ export default function KimasModule({
     if (isEmoji || !src) {
       return (
         <div className={`flex items-center justify-center bg-[#16161a] border border-dark-border rounded-lg ${className || "w-16 h-16"}`}>
-          <span className="text-4xl select-none">{src || "📦"}</span>
+          <span className="text-4xl select-none">{src || ""}</span>
         </div>
       );
     }
@@ -204,7 +204,7 @@ export default function KimasModule({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs font-mono mb-2 uppercase">Total Katalog Merchandise</div>
-          <div className="text-3xl font-display font-bold text-white">{products.length}</div>
+          <div className="text-3xl font-display font-bold text-white">0</div>
           <div className="text-xs text-brand-orange mt-2 flex items-center gap-1">
             <Package size={12} /> Unit Bisnis Mandiri
           </div>
@@ -220,7 +220,7 @@ export default function KimasModule({
         </div>
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs font-mono mb-2 uppercase">Sistem Pembayaran</div>
-          <div className="text-3xl font-display font-bold text-white">4 Ops</div>
+          <div className="text-3xl font-display font-bold text-white">0 Ops</div>
           <div className="text-xs text-blue-400 mt-2">
             Simulasi Gateway Aktif
           </div>
@@ -374,7 +374,7 @@ export default function KimasModule({
                   /* ---- FORM IDENTITAS PEMBELI ---- */
                   <div className="space-y-3">
                     <div className="bg-brand-orange/10 border border-brand-orange/30 rounded-lg px-3 py-2">
-                      <p className="text-[10px] text-brand-orange font-semibold uppercase tracking-wide">⚠ Wajib Isi Identitas</p>
+                      <p className="text-[10px] text-brand-orange font-semibold uppercase tracking-wide"> Wajib Isi Identitas</p>
                       <p className="text-[10px] text-gray-400 mt-0.5">Lengkapi data diri Anda sebelum melanjutkan pembayaran.</p>
                     </div>
 

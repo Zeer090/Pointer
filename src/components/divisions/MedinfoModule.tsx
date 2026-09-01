@@ -102,7 +102,7 @@ export default function MedinfoModule({
 
   const [isAddAlbumOpen, setIsAddAlbumOpen] = useState(false);
   const [albumTitle, setAlbumTitle] = useState("");
-  const [albumEmoji, setAlbumEmoji] = useState("📁");
+  const [albumEmoji, setAlbumEmoji] = useState("");
   const [albumLink, setAlbumLink] = useState("");
 
   // Default to June 2026 (matching system context)
@@ -206,7 +206,7 @@ export default function MedinfoModule({
       albumLink
     );
     setAlbumTitle("");
-    setAlbumEmoji("📁");
+    setAlbumEmoji("");
     setAlbumLink("");
     setIsAddAlbumOpen(false);
   };
@@ -218,28 +218,28 @@ export default function MedinfoModule({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs uppercase font-mono mb-2">Total Publikasi Sosial</div>
-          <div className="text-3xl font-display font-bold text-white">142</div>
+          <div className="text-3xl font-display font-bold text-white">0</div>
           <div className="text-xs text-brand-orange mt-2 flex items-center gap-1">
-            <span>🔥 +12 Video minggu ini</span>
+            <span> +0 Video minggu ini</span>
           </div>
         </div>
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs uppercase font-mono mb-2">Terposting Calendar</div>
-          <div className="text-3xl font-display font-bold text-white">{calendar.length}</div>
+          <div className="text-3xl font-display font-bold text-white">0</div>
           <div className="text-xs text-green-500 mt-2">
             Roster publikasi terjadwal
           </div>
         </div>
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs uppercase font-mono mb-2">Campaign Aktif</div>
-          <div className="text-3xl font-display font-bold text-white">3</div>
+          <div className="text-3xl font-display font-bold text-white">0</div>
           <div className="text-xs text-blue-400 mt-2">
             Meningkatkan jangkauan HIMA
           </div>
         </div>
         <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
           <div className="text-gray-400 text-xs uppercase font-mono mb-2">Total Media Dokumentasi</div>
-          <div className="text-3xl font-display font-bold text-white">124 GB</div>
+          <div className="text-3xl font-display font-bold text-white">0 GB</div>
           <div className="text-xs text-purple-400 mt-2">
             Tersimpan aman di Google Drive
           </div>
@@ -428,7 +428,7 @@ export default function MedinfoModule({
                   return (
                     <div className="p-2.5 bg-brand-orange/5 border border-brand-orange/20 rounded-lg text-xs text-gray-300">
                       <span className="font-bold text-brand-orange flex items-center gap-1 mb-1">
-                        💡 Tips Konten Hari Besar
+                         Tips Konten Hari Besar
                       </span>
                       Hari ini memperingati <strong className="text-white">{holidayName}</strong>. Medinfo disarankan membuat konten ucapan selamat, infografis sejarah, atau postingan interaktif bertema khusus.
                     </div>
@@ -607,7 +607,7 @@ export default function MedinfoModule({
                       className="w-full bg-dark-bg border border-dark-border rounded px-3 py-2 text-white text-xs focus:outline-none text-center"
                       value={albumEmoji}
                       onChange={(e) => setAlbumEmoji(e.target.value)}
-                      placeholder="📁"
+                      placeholder=""
                       required
                     />
                   </div>
