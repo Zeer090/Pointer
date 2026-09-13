@@ -428,7 +428,7 @@ export default function MedinfoModule({
                   return (
                     <div className="p-2.5 bg-brand-orange/5 border border-brand-orange/20 rounded-lg text-xs text-gray-300">
                       <span className="font-bold text-brand-orange flex items-center gap-1 mb-1">
-                         Tips Konten Hari Besar
+                        Tips Konten Hari Besar
                       </span>
                       Hari ini memperingati <strong className="text-white">{holidayName}</strong>. Medinfo disarankan membuat konten ucapan selamat, infografis sejarah, atau postingan interaktif bertema khusus.
                     </div>
@@ -584,7 +584,7 @@ export default function MedinfoModule({
             <h3 className="font-display font-bold text-base text-white">
               Tambah Album Dokumentasi Baru
             </h3>
-            
+
             <form onSubmit={handleAlbumSubmit} className="space-y-4 text-xs font-sans">
               <div className="space-y-3">
                 <div className="space-y-1">
@@ -598,7 +598,7 @@ export default function MedinfoModule({
                     required
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-12 gap-3">
                   <div className="col-span-3 space-y-1">
                     <label className="text-[10px] uppercase font-mono text-gray-500">Emoji</label>

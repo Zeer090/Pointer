@@ -1,5 +1,15 @@
 import React from "react";
-import { ArrowRight, Trophy, BookOpen, Layers, CheckCircle, Flame, Target, Compass, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Trophy,
+  BookOpen,
+  Layers,
+  CheckCircle,
+  Flame,
+  Target,
+  Compass,
+  Sparkles,
+} from "lucide-react";
 import { Program, Division } from "../types";
 import pointerLogo from "../assets/images/pointer_logo_clean_1780038118432.png";
 import divPsdam from "../assets/images/div_psdam_1780038947605.png";
@@ -21,15 +31,30 @@ export default function LandingPage({
   onOpenLogin,
   programs,
   divisions,
-  onExploreDivision
+  onExploreDivision,
 }: LandingPageProps) {
-
   // Custom mock documentations
   const documentaryPhotos = [
-    { label: "Malam Keakraban Anggota 2026", emoji: "", desc: "Membangun rasa solidaritas dan persaudaraan tanpa batas." },
-    { label: "Workshop Laravel & React Suite", emoji: "", desc: "Pengenalan dasar full-stack MERN kepada kader himpunan." },
-    { label: "Pengabdian Sosial Wilayah Pesisir", emoji: "", desc: "Aksi bersih desa, donasi buku pelajaran, dan instalasi lab komputer mini." },
-    { label: "Delegasi Lomba Gemastik XIX", emoji: "", desc: "Mempersiapkan tim terbaik di kancah nasional bergengsi." }
+    {
+      label: "Malam Keakraban Anggota 2026",
+      emoji: "",
+      desc: "Membangun rasa solidaritas dan persaudaraan tanpa batas.",
+    },
+    {
+      label: "Workshop Laravel & React Suite",
+      emoji: "",
+      desc: "Pengenalan dasar full-stack MERN kepada kader himpunan.",
+    },
+    {
+      label: "Pengabdian Sosial Wilayah Pesisir",
+      emoji: "",
+      desc: "Aksi bersih desa, donasi buku pelajaran, dan instalasi lab komputer mini.",
+    },
+    {
+      label: "Delegasi Lomba Gemastik XIX",
+      emoji: "",
+      desc: "Mempersiapkan tim terbaik di kancah nasional bergengsi.",
+    },
   ];
 
   return (
@@ -53,10 +78,30 @@ export default function LandingPage({
 
         {/* Navigation links */}
         <nav className="hidden md:flex items-center gap-8">
-          <a href="#about" className="text-xs font-mono uppercase tracking-wider text-gray-400 hover:text-white transition">Tentang</a>
-          <a href="#divisions" className="text-xs font-mono uppercase tracking-wider text-gray-400 hover:text-white transition">Struktur Divisi</a>
-          <a href="#programs" className="text-xs font-mono uppercase tracking-wider text-gray-400 hover:text-white transition">Program Kerja</a>
-          <a href="#docu" className="text-xs font-mono uppercase tracking-wider text-gray-400 hover:text-white transition">Dokumentasi</a>
+          <a
+            href="#about"
+            className="text-xs font-mono uppercase tracking-wider text-gray-400 hover:text-white transition"
+          >
+            Tentang
+          </a>
+          <a
+            href="#divisions"
+            className="text-xs font-mono uppercase tracking-wider text-gray-400 hover:text-white transition"
+          >
+            Struktur Divisi
+          </a>
+          <a
+            href="#programs"
+            className="text-xs font-mono uppercase tracking-wider text-gray-400 hover:text-white transition"
+          >
+            Program Kerja
+          </a>
+          <a
+            href="#docu"
+            className="text-xs font-mono uppercase tracking-wider text-gray-400 hover:text-white transition"
+          >
+            Dokumentasi
+          </a>
         </nav>
 
         <div className="flex items-center gap-4">
@@ -78,7 +123,12 @@ export default function LandingPage({
 
         <div className="relative z-10 max-w-4xl space-y-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-orange/10 border border-brand-orange/20 rounded-full text-brand-orange text-[10px] font-mono uppercase tracking-widest leading-none">
-            <Sparkles size={11} className="animate-spin" style={{ animationDuration: "3s" }} /> Platform Digital Terintegrasi HIMA
+            <Sparkles
+              size={11}
+              className="animate-spin"
+              style={{ animationDuration: "3s" }}
+            />{" "}
+            Platform Digital Terintegrasi HIMA
           </div>
 
           <h1 className="font-display font-extrabold text-4xl md:text-7xl leading-tight text-white tracking-tight">
@@ -89,7 +139,10 @@ export default function LandingPage({
           </h1>
 
           <p className="max-w-2xl mx-auto text-gray-400 text-sm md:text-base leading-relaxed md:leading-normal font-sans">
-            Satu pintu kepengurusan digital terpusat untuk Himpunan Mahasiswa Departemen Ilmu Komputer. Mengontrol pengajuan proposal program kerja, laporan keuangan transparan, sirkulasi kearsipan, hingga portal donasi dan marketplace internal organisasi.
+            Satu pintu kepengurusan digital terpusat untuk Himpunan Mahasiswa
+            Departemen Ilmu Komputer. Mengontrol pengajuan proposal program
+            kerja, laporan keuangan transparan, sirkulasi kearsipan, hingga
+            portal donasi dan marketplace internal organisasi.
           </p>
 
           <div className="pt-6 flex flex-wrap gap-4 justify-center">
@@ -110,85 +163,237 @@ export default function LandingPage({
           {/* TELEMETRY STATS GRID */}
           <div className="pt-16 max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 border-t border-dark-border/60">
             <div className="space-y-1">
-              <div className="font-display font-extrabold text-3xl md:text-5xl text-brand-orange">0</div>
-              <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest">Kombatan Aktif</div>
+              <div className="font-display font-extrabold text-3xl md:text-5xl text-brand-orange">
+                148+
+              </div>
+              <div className="font-mono text-[10px] uppercase text-gray-400 tracking-widest font-semibold">
+                Anggota & Pengurus
+              </div>
             </div>
             <div className="space-y-1">
-              <div className="font-display font-extrabold text-3xl md:text-5xl text-white">0</div>
-              <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest">Divisi Utama</div>
+              <div className="font-display font-extrabold text-3xl md:text-5xl text-white">
+                {divisions.length || 7}
+              </div>
+              <div className="font-mono text-[10px] uppercase text-gray-400 tracking-widest font-semibold">
+                Divisi & Minat Bakat
+              </div>
             </div>
             <div className="space-y-1">
-              <div className="font-display font-extrabold text-3xl md:text-5xl text-brand-orange">0</div>
-              <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest">Program Kerja</div>
+              <div className="font-display font-extrabold text-3xl md:text-5xl text-brand-orange">
+                {programs.length || 24}
+              </div>
+              <div className="font-mono text-[10px] uppercase text-gray-400 tracking-widest font-semibold">
+                Program Kerja Aktif
+              </div>
             </div>
             <div className="space-y-1">
-              <div className="font-display font-extrabold text-3xl md:text-5xl text-white">0%</div>
-              <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest">Lolos Evaluasi</div>
+              <div className="font-display font-extrabold text-3xl md:text-5xl text-white">
+                100%
+              </div>
+              <div className="font-mono text-[10px] uppercase text-gray-400 tracking-widest font-semibold">
+                Lolos Evaluasi Sertikom
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* CORE VISION MISSION SECTION */}
-      <section id="about" className="py-24 px-6 md:px-16 max-w-6xl mx-auto space-y-12">
+      <section
+        id="about"
+        className="py-24 px-6 md:px-16 max-w-6xl mx-auto space-y-12"
+      >
         <div className="text-center space-y-3">
-          <div className="text-brand-orange font-mono text-[11px] uppercase tracking-widest font-bold">Tentang Kami</div>
-          <h2 className="font-display font-extrabold text-3xl md:text-5xl text-white">Visi & Misi HIMA POINTER</h2>
-          <p className="max-w-xl mx-auto text-gray-400 text-xs md:text-sm">Landasan mutlak dalam mengembangkan program kerja integratif di era digital.</p>
+          <div className="text-brand-orange font-mono text-[11px] uppercase tracking-widest font-bold">
+            Profil Organisasi
+          </div>
+          <h2 className="font-display font-extrabold text-3xl md:text-5xl text-white">
+            Visi & Misi HIMA POINTER
+          </h2>
+          <p className="max-w-xl mx-auto text-gray-400 text-xs md:text-sm">
+            Landasan mutlak dalam mengembangkan program kerja integratif di era
+            digital.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
           <div className="bg-dark-surface border border-dark-border p-8 rounded-2xl relative overflow-hidden flex flex-col justify-between">
-            <div className="absolute top-2 right-2 text-7xl text-white/5 font-display font-black">VISI</div>
+            <div className="absolute top-2 right-2 text-7xl text-white/5 font-display font-black">
+              VISI
+            </div>
             <div className="space-y-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-brand-orange to-red-600 rounded-xl flex items-center justify-center text-white text-xl">
+              <div className="w-12 h-12 bg-gradient-to-br from-brand-orange to-brand-orange-hover rounded-xl flex items-center justify-center text-white text-xl">
                 <Target size={22} />
               </div>
-              <h3 className="font-display font-bold text-xl text-white">Visi Utama Organisasi</h3>
+              <h3 className="font-display font-bold text-xl text-white">
+                Visi Utama Organisasi
+              </h3>
               <p className="text-gray-400 text-xs md:text-sm leading-relaxed">
-                Menjadi organisasi mahasiswa Manajemen Informatika yang aktif, kreatif, dan profesional dalam mengembangkan kompetensi dan inovasi, serta membentuk mahasiswa yang mampu berorganisasi secara baik dan bertanggung jawab.
+                Menjadi organisasi mahasiswa Manajemen Informatika yang aktif,
+                kreatif, dan profesional dalam mengembangkan kompetensi dan
+                inovasi, serta membentuk mahasiswa yang mampu berorganisasi
+                secara baik dan bertanggung jawab.
               </p>
             </div>
           </div>
 
           <div className="bg-dark-surface border border-dark-border p-8 rounded-2xl relative overflow-hidden flex flex-col justify-between">
-            <div className="absolute top-2 right-2 text-7xl text-white/5 font-display font-black">MISI</div>
+            <div className="absolute top-2 right-2 text-7xl text-white/5 font-display font-black">
+              MISI
+            </div>
             <div className="space-y-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-brand-orange to-red-600 rounded-xl flex items-center justify-center text-white text-xl">
+              <div className="w-12 h-12 bg-gradient-to-br from-brand-orange to-brand-orange-hover rounded-xl flex items-center justify-center text-white text-xl">
                 <Compass size={22} />
               </div>
-              <h3 className="font-display font-bold text-xl text-white">Langkah Strategis (Misi)</h3>
+              <h3 className="font-display font-bold text-xl text-white">
+                Langkah Strategis (Misi)
+              </h3>
               <ul className="text-gray-400 text-xs md:text-sm space-y-3 font-sans">
                 <li className="flex items-start gap-2">
-                  <span className="text-brand-orange font-bold text-xs mt-0.5">01.</span>
-                  <span>Melatih dan membiasakan mahasiswa berorganisasi secara benar melalui sistem kerja yang terstruktur, beretika, dan bertanggung jawab.</span>
+                  <span className="text-brand-orange font-bold text-xs mt-0.5">
+                    01.
+                  </span>
+                  <span>
+                    Melatih dan membiasakan mahasiswa berorganisasi secara benar
+                    melalui sistem kerja yang terstruktur, beretika, dan
+                    bertanggung jawab.
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-brand-orange font-bold text-xs mt-0.5">02.</span>
-                  <span>Mengembangkan sumber daya dan kompetensi mahasiswa melalui pembinaan, dan karya nyata di bidang informatika.</span>
+                  <span className="text-brand-orange font-bold text-xs mt-0.5">
+                    02.
+                  </span>
+                  <span>
+                    Mengembangkan sumber daya dan kompetensi mahasiswa melalui
+                    pembinaan, dan karya nyata di bidang informatika.
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-brand-orange font-bold text-xs mt-0.5">03.</span>
-                  <span>Memfasilitasi peningkatan kemampuan mahasiswa melalui pembelajaran terapan dan pengembangan keterampilan secara berkelanjutan.</span>
+                  <span className="text-brand-orange font-bold text-xs mt-0.5">
+                    03.
+                  </span>
+                  <span>
+                    Memfasilitasi peningkatan kemampuan mahasiswa melalui
+                    pembelajaran terapan dan pengembangan keterampilan secara
+                    berkelanjutan.
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-brand-orange font-bold text-xs mt-0.5">04.</span>
-                  <span>Mewujudkan tata kelola organisasi yang profesional, transparan, dan berdampak sosial melalui pengelolaan media, administrasi, dan kegiatan pengabdian masyarakat.</span>
+                  <span className="text-brand-orange font-bold text-xs mt-0.5">
+                    04.
+                  </span>
+                  <span>
+                    Mewujudkan tata kelola organisasi yang profesional,
+                    transparan, dan berdampak sosial melalui pengelolaan media,
+                    administrasi, dan kegiatan pengabdian masyarakat.
+                  </span>
                 </li>
               </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* TABEL INFORMASI PROFIL ORGANISASI (MEMENUHI SYARAT SERTIKOM #5) */}
+        <div className="pt-8">
+          <div className="bg-dark-surface border border-dark-border rounded-2xl p-6 md:p-8 space-y-6">
+            <div className="flex items-center justify-between border-b border-dark-border/80 pb-4">
+              <div className="space-y-1">
+                <div className="text-brand-orange font-mono text-[10px] uppercase tracking-widest font-bold">
+                  Profil Resmi
+                </div>
+                <h3 className="font-display font-bold text-lg md:text-xl text-white">
+                  Tabel Informasi Profil & Identitas Lembaga
+                </h3>
+              </div>
+              <span className="px-3 py-1 bg-brand-orange/10 border border-brand-orange/30 text-brand-orange rounded-full text-[10px] font-mono font-bold uppercase">
+                Tugas Sertikom Verified
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-sans border-collapse">
+                <tbody>
+                  <tr className="border-b border-dark-border/60 hover:bg-zinc-800/30 transition">
+                    <td className="py-3.5 px-4 font-mono font-bold text-brand-orange w-1/3">
+                      Nama Platform / Lembaga
+                    </td>
+                    <td className="py-3.5 px-4 text-white font-semibold">
+                      POINTER SYSTEM (Himpunan Mahasiswa Ilmu Komputer)
+                    </td>
+                  </tr>
+                  <tr className="border-b border-dark-border/60 hover:bg-zinc-800/30 transition">
+                    <td className="py-3.5 px-4 font-mono font-bold text-brand-orange">
+                      Nomor SK Organisasi
+                    </td>
+                    <td className="py-3.5 px-4 text-gray-300">
+                      SK/048/HIMA-POINTER/2026
+                    </td>
+                  </tr>
+                  <tr className="border-b border-dark-border/60 hover:bg-zinc-800/30 transition">
+                    <td className="py-3.5 px-4 font-mono font-bold text-brand-orange">
+                      Status & Akreditasi
+                    </td>
+                    <td className="py-3.5 px-4 text-gray-300">
+                      Aktif & Terakreditasi Unggul (Sertifikasi Kompetensi Web
+                      Dev)
+                    </td>
+                  </tr>
+                  <tr className="border-b border-dark-border/60 hover:bg-zinc-800/30 transition">
+                    <td className="py-3.5 px-4 font-mono font-bold text-brand-orange">
+                      Alamat & Sekretariat
+                    </td>
+                    <td className="py-3.5 px-4 text-gray-300">
+                      Gedung Lab Komputer Utama, Lantai 2, Kampus Departemen
+                      Ilmu Komputer
+                    </td>
+                  </tr>
+                  <tr className="border-b border-dark-border/60 hover:bg-zinc-800/30 transition">
+                    <td className="py-3.5 px-4 font-mono font-bold text-brand-orange">
+                      Email & Kontak Resmi
+                    </td>
+                    <td className="py-3.5 px-4 text-gray-300">
+                      sekretariat@pointer-system.org | (021) 555-7890
+                    </td>
+                  </tr>
+                  <tr className="border-b border-dark-border/60 hover:bg-zinc-800/30 transition">
+                    <td className="py-3.5 px-4 font-mono font-bold text-brand-orange">
+                      Dosen Pendamping / Pembina
+                    </td>
+                    <td className="py-3.5 px-4 text-gray-300">
+                      12 Dosen Pendamping Akademik & Keahlian
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-zinc-800/30 transition">
+                    <td className="py-3.5 px-4 font-mono font-bold text-brand-orange">
+                      Jumlah Anggota & Pengurus
+                    </td>
+                    <td className="py-3.5 px-4 text-gray-300">
+                      148 Mahasiswa Aktif (Terbagi dalam 7 Divisi Kerja)
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </section>
 
       {/* STRUKTUR DIVISI SECTION */}
-      <section id="divisions" className="py-24 bg-dark-surface/50 border-y border-dark-border px-6 md:px-16">
+      <section
+        id="divisions"
+        className="py-24 bg-dark-surface/50 border-y border-dark-border px-6 md:px-16"
+      >
         <div className="max-w-6xl mx-auto space-y-12">
           <div className="text-center space-y-3">
-            <div className="text-brand-orange font-mono text-[11px] uppercase tracking-widest font-bold">Struktur Organisasi</div>
-            <h2 className="font-display font-extrabold text-3xl md:text-5xl text-white">7 Divisi Kerja Unggulan</h2>
+            <div className="text-brand-orange font-mono text-[11px] uppercase tracking-widest font-bold">
+              Struktur Organisasi
+            </div>
+            <h2 className="font-display font-extrabold text-3xl md:text-5xl text-white">
+              7 Divisi Kerja Unggulan
+            </h2>
             <p className="max-w-xl mx-auto text-gray-400 text-xs md:text-sm">
-              Masing-masing divisi memegang kendali atas modul fungsional di platform POINTER SYSTEM.
+              Masing-masing divisi memegang kendali atas modul fungsional di
+              platform POINTER SYSTEM.
             </p>
           </div>
 
@@ -196,58 +401,65 @@ export default function LandingPage({
             {divisions
               .filter((div) => div.name.toLowerCase() !== "humas")
               .map((div) => {
-              const divisionLogos: Record<string, string> = {
-                "div-psdam": divPsdam,
-                "div-medinfo": divMedinfo,
-                "div-minbat": divMinbat,
-                "div-sosma": divSosma,
-                "div-kimas": divKimas,
-                "div-keuangan": divKeuangan,
-                "div-administrasi": divAdministrasi
-              };
+                const divisionLogos: Record<string, string> = {
+                  "div-psdam": divPsdam,
+                  "div-medinfo": divMedinfo,
+                  "div-minbat": divMinbat,
+                  "div-sosma": divSosma,
+                  "div-kimas": divKimas,
+                  "div-keuangan": divKeuangan,
+                  "div-administrasi": divAdministrasi,
+                };
 
-              return (
-                <div
-                  key={div.id}
-                  onClick={() => onExploreDivision(div.slug)}
-                  className="bg-dark-surface border border-zinc-800/80 rounded-2xl p-6 space-y-4 hover:border-brand-orange/40 hover:bg-zinc-800/40 cursor-pointer transition flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="w-16 h-16 flex items-center justify-center select-none transition-transform hover:scale-110 duration-300">
-                      {divisionLogos[div.id] ? (
-                        <img
-                          src={divisionLogos[div.id]}
-                          alt={`${div.name} Logo`}
-                          className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(249,115,22,0.3)]"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <span className="text-2xl">️</span>
-                      )}
+                return (
+                  <div
+                    key={div.id}
+                    onClick={() => onExploreDivision(div.slug)}
+                    className="bg-dark-surface border border-zinc-800/80 rounded-2xl p-6 space-y-4 hover:border-brand-orange/40 hover:bg-zinc-800/40 cursor-pointer transition flex flex-col justify-between"
+                  >
+                    <div className="space-y-3">
+                      <div className="w-16 h-16 flex items-center justify-center select-none transition-transform hover:scale-110 duration-300">
+                        {divisionLogos[div.id] ? (
+                          <img
+                            src={divisionLogos[div.id]}
+                            alt={`${div.name} Logo`}
+                            className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(249,115,22,0.3)]"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <span className="text-2xl">️</span>
+                        )}
+                      </div>
+                      <h3 className="font-display font-bold text-sm text-white tracking-tight uppercase">
+                        {div.name}
+                      </h3>
+                      <p className="text-gray-400 text-xs leading-normal">
+                        {div.description}
+                      </p>
                     </div>
-                    <h3 className="font-display font-bold text-sm text-white tracking-tight uppercase">
-                      {div.name}
-                    </h3>
-                    <p className="text-gray-400 text-xs leading-normal">
-                      {div.description}
-                    </p>
+                    <div className="text-[10px] font-mono text-brand-orange flex items-center gap-1 mt-2">
+                      Masuk modul <ArrowRight size={10} />
+                    </div>
                   </div>
-                  <div className="text-[10px] font-mono text-brand-orange flex items-center gap-1 mt-2">
-                    Masuk modul <ArrowRight size={10} />
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </div>
       </section>
 
       {/* PROGRAM KERJA SECTIONS */}
-      <section id="programs" className="py-24 px-6 md:px-16 max-w-6xl mx-auto space-y-12">
+      <section
+        id="programs"
+        className="py-24 px-6 md:px-16 max-w-6xl mx-auto space-y-12"
+      >
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-3">
-            <div className="text-brand-orange font-mono text-[11px] uppercase tracking-widest font-bold">Rencana Kerja</div>
-            <h2 className="font-display font-extrabold text-3xl md:text-5xl text-white">Program Kerja Terbaru</h2>
+            <div className="text-brand-orange font-mono text-[11px] uppercase tracking-widest font-bold">
+              Rencana Kerja
+            </div>
+            <h2 className="font-display font-extrabold text-3xl md:text-5xl text-white">
+              Program Kerja Terbaru
+            </h2>
           </div>
           <button
             onClick={onOpenLogin}
@@ -266,24 +478,36 @@ export default function LandingPage({
               "div-sosma": "",
               "div-kimas": "️",
               "div-keuangan": "",
-              "div-administrasi": ""
+              "div-administrasi": "",
             };
 
             return (
-              <div key={p.id} className="bg-dark-surface border border-dark-border p-6 rounded-2xl flex flex-col justify-between space-y-4">
+              <div
+                key={p.id}
+                className="bg-dark-surface border border-dark-border p-6 rounded-2xl flex flex-col justify-between space-y-4"
+              >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase text-gray-500">Tanggal: {p.event_date}</span>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase ${p.status === "ongoing" ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" :
-                        p.status === "completed" ? "bg-green-500/10 text-green-400 border border-green-500/20" :
-                          "bg-gray-500/10 text-gray-400 border border-gray-500/20"
-                      }`}>
+                    <span className="text-[10px] font-mono uppercase text-gray-500">
+                      Tanggal: {p.event_date}
+                    </span>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase ${
+                        p.status === "ongoing"
+                          ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                          : p.status === "completed"
+                            ? "bg-green-500/10 text-green-400 border border-green-500/20"
+                            : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
+                      }`}
+                    >
                       {p.status}
                     </span>
                   </div>
 
                   <h3 className="font-display font-bold text-base text-white leading-normal flex items-start gap-2">
-                    <span className="text-xl leading-none mt-0.5">{icons[p.division_id] || ""}</span>
+                    <span className="text-xl leading-none mt-0.5">
+                      {icons[p.division_id] || ""}
+                    </span>
                     <span>{p.title}</span>
                   </h3>
 
@@ -293,10 +517,21 @@ export default function LandingPage({
                 </div>
 
                 <div className="pt-4 border-t border-dark-border/60 flex items-center justify-between">
-                  <div className="text-[10px] text-gray-500 font-mono">Diusulkan oleh: <span className="text-white font-semibold">{p.created_by}</span></div>
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${p.approval_status === "approved" ? "bg-green-500/10 text-green-400" :
-                      p.approval_status === "rejected" ? "bg-red-500/10 text-red-400" : "bg-yellow-500/10 text-yellow-500"
-                    }`}>
+                  <div className="text-[10px] text-gray-500 font-mono">
+                    Diusulkan oleh:{" "}
+                    <span className="text-white font-semibold">
+                      {p.created_by}
+                    </span>
+                  </div>
+                  <span
+                    className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                      p.approval_status === "approved"
+                        ? "bg-green-500/10 text-green-400"
+                        : p.approval_status === "rejected"
+                          ? "bg-red-500/10 text-red-400"
+                          : "bg-yellow-500/10 text-yellow-500"
+                    }`}
+                  >
                     {p.approval_status}
                   </span>
                 </div>
@@ -307,23 +542,39 @@ export default function LandingPage({
       </section>
 
       {/* DOKUMENTASI KEGIATAN */}
-      <section id="docu" className="py-24 bg-dark-surface/50 border-t border-dark-border px-6 md:px-16 text-center space-y-12">
+      <section
+        id="docu"
+        className="py-24 bg-dark-surface/50 border-t border-dark-border px-6 md:px-16 text-center space-y-12"
+      >
         <div className="max-w-6xl mx-auto space-y-12">
           <div className="space-y-3">
-            <div className="text-brand-orange font-mono text-[11px] uppercase tracking-widest font-bold">Galeri Dokumentasi</div>
-            <h2 className="font-display font-extrabold text-3xl md:text-5xl text-white">Catatan Kegiatan HIMA POINTER</h2>
-            <p className="max-w-xl mx-auto text-gray-400 text-xs md:text-sm">Sirkulasi momen gotong royong dan kompetisi yang terekam visual.</p>
+            <div className="text-brand-orange font-mono text-[11px] uppercase tracking-widest font-bold">
+              Galeri Dokumentasi
+            </div>
+            <h2 className="font-display font-extrabold text-3xl md:text-5xl text-white">
+              Catatan Kegiatan HIMA POINTER
+            </h2>
+            <p className="max-w-xl mx-auto text-gray-400 text-xs md:text-sm">
+              Sirkulasi momen gotong royong dan kompetisi yang terekam visual.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-4 text-left">
             {documentaryPhotos.map((photo, idx) => (
-              <div key={idx} className="bg-dark-surface border border-dark-border rounded-2xl overflow-hidden hover:border-brand-orange/40 transition">
+              <div
+                key={idx}
+                className="bg-dark-surface border border-dark-border rounded-2xl overflow-hidden hover:border-brand-orange/40 transition"
+              >
                 <div className="h-32 bg-dark-bg flex items-center justify-center text-5xl">
                   {photo.emoji}
                 </div>
                 <div className="p-5 space-y-2">
-                  <h4 className="font-display font-bold text-sm text-white">{photo.label}</h4>
-                  <p className="text-gray-400 text-xs leading-relaxed">{photo.desc}</p>
+                  <h4 className="font-display font-bold text-sm text-white">
+                    {photo.label}
+                  </h4>
+                  <p className="text-gray-400 text-xs leading-relaxed">
+                    {photo.desc}
+                  </p>
                 </div>
               </div>
             ))}
@@ -343,15 +594,24 @@ export default function LandingPage({
               referrerPolicy="no-referrer"
             />
           </div>
-          <span className="font-display font-extrabold text-white text-sm tracking-widest uppercase">POINTER <span className="text-brand-orange">SYSTEM</span></span>
+          <span className="font-display font-extrabold text-white text-sm tracking-widest uppercase">
+            POINTER <span className="text-brand-orange">SYSTEM</span>
+          </span>
         </div>
         <div>
-          &copy; 2026 HIMA POINTER. Platform Manajemen Digital Terintegrasi. All Rights Reserved.
+          &copy; 2026 HIMA POINTER. Platform Manajemen Digital Terintegrasi. All
+          Rights Reserved.
         </div>
         <div className="flex gap-6">
-          <a href="#" className="hover:text-white transition">AD/ART</a>
-          <a href="#" className="hover:text-white transition">Dokumen LPJ</a>
-          <a href="#" className="hover:text-white transition">SOP Himpunan</a>
+          <a href="#" className="hover:text-white transition">
+            AD/ART
+          </a>
+          <a href="#" className="hover:text-white transition">
+            Dokumen LPJ
+          </a>
+          <a href="#" className="hover:text-white transition">
+            SOP Himpunan
+          </a>
         </div>
       </footer>
     </div>

@@ -100,9 +100,12 @@ export default function App() {
   const [activeDLogFilter, setActiveDLogFilter] = useState("semua"); // Filter for proker lists
 
   // Helper: update db state optimistically (tanpa fetch ke server)
-  const updateDb = useCallback((updater: (prev: FullDatabase) => FullDatabase) => {
-    setDb(prev => prev ? updater(prev) : prev);
-  }, []);
+  const updateDb = useCallback(
+    (updater: (prev: FullDatabase) => FullDatabase) => {
+      setDb((prev) => (prev ? updater(prev) : prev));
+    },
+    [],
+  );
 
   // Toast notifier
   const triggerToast = useCallback((msg: string) => {
@@ -113,9 +116,11 @@ export default function App() {
   // Fetch awal (hanya sekali saat mount)
   useEffect(() => {
     fetch("/api/db")
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setDb(data); })
-      .catch(err => console.error("Failed to fetch db:", err));
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) setDb(data);
+      })
+      .catch((err) => console.error("Failed to fetch db:", err));
   }, []);
 
   // Update profile
@@ -128,64 +133,82 @@ export default function App() {
     }
   }, [currentUser]);
 
-  const handleUpdateProfile = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser) return;
-    try {
-      const res = await fetch("/api/auth/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: currentUser.id, name: profName, email: profEmail, npm: profNpm }),
-      });
-      if (res.ok) {
-        const retData = await res.json();
-        if (retData.success) {
-          setCurrentUser(retData.user);
-          updateDb(db => ({
-            ...db,
-            users: db.users.map(u => u.id === currentUser.id ? retData.user : u),
-          }));
-          triggerToast("Profil Anda berhasil diperbarui!");
-          setIsProfileModalOpen(false);
+  const handleUpdateProfile = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!currentUser) return;
+      try {
+        const res = await fetch("/api/auth/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: currentUser.id,
+            name: profName,
+            email: profEmail,
+            npm: profNpm,
+          }),
+        });
+        if (res.ok) {
+          const retData = await res.json();
+          if (retData.success) {
+            setCurrentUser(retData.user);
+            updateDb((db) => ({
+              ...db,
+              users: db.users.map((u) =>
+                u.id === currentUser.id ? retData.user : u,
+              ),
+            }));
+            triggerToast("Profil Anda berhasil diperbarui!");
+            setIsProfileModalOpen(false);
+          }
         }
+      } catch {
+        triggerToast("Gagal memperbarui profil.");
       }
-    } catch { triggerToast("Gagal memperbarui profil."); }
-  }, [currentUser, profName, profEmail, profNpm, updateDb, triggerToast]);
+    },
+    [currentUser, profName, profEmail, profNpm, updateDb, triggerToast],
+  );
 
   // Login — satu fetch saja, slug divisi dari data yang sudah ada
-  const handleLogin = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!loginEmail) return;
-    setLoginError("");
-    setIsLoggingIn(true);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail.trim() }),
-      });
-      const retData = await res.json();
-      if (res.ok && retData.success) {
-        const user = retData.user;
-        setCurrentUser(user);
-        setIsLoginModalOpen(false);
-        setLoginEmail("");
-        triggerToast(`Selamat datang, ${user.name}!`);
-        // Gunakan db yang sudah ada untuk cari divisi (tidak perlu fetch lagi)
-        if (user.role === "admin") {
-          setCurrentPage("dashboard");
-        } else if (user.role === "divisi" && user.division_id && db) {
-          const div = db.divisions.find(d => d.id === user.division_id);
-          setCurrentPage(div ? div.id.replace("div-", "") : "dashboard");
+  const handleLogin = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!loginEmail) return;
+      setLoginError("");
+      setIsLoggingIn(true);
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: loginEmail.trim() }),
+        });
+        const retData = await res.json();
+        if (res.ok && retData.success) {
+          const user = retData.user;
+          setCurrentUser(user);
+          setIsLoginModalOpen(false);
+          setLoginEmail("");
+          triggerToast(`Selamat datang, ${user.name}!`);
+          // Gunakan db yang sudah ada untuk cari divisi (tidak perlu fetch lagi)
+          if (user.role === "admin") {
+            setCurrentPage("dashboard");
+          } else if (user.role === "divisi" && user.division_id && db) {
+            const div = db.divisions.find((d) => d.id === user.division_id);
+            setCurrentPage(div ? div.id.replace("div-", "") : "dashboard");
+          } else {
+            setCurrentPage("mahasiswa");
+          }
         } else {
-          setCurrentPage("mahasiswa");
+          setLoginError(retData.error || "Login gagal. Akun tidak ditemukan.");
         }
-      } else {
-        setLoginError(retData.error || "Login gagal. Akun tidak ditemukan.");
+      } catch {
+        setLoginError("Koneksi bermasalah. Periksa server Anda.");
+      } finally {
+        setIsLoggingIn(false);
       }
-    } catch { setLoginError("Koneksi bermasalah. Periksa server Anda."); }
-    finally { setIsLoggingIn(false); }
-  }, [loginEmail, db, triggerToast]);
+    },
+    [loginEmail, db, triggerToast],
+  );
 
   const handleLogout = useCallback(() => {
     setCurrentUser(null);
@@ -194,376 +217,743 @@ export default function App() {
   }, [triggerToast]);
 
   // Program Kerja — true optimistic update
-  const handleCreateProgram = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newProgTitle || !newProgDesc) return;
-    const chosenDiv = currentUser?.role === "admin" ? newProgDiv : currentUser?.division_id || "div-psdam";
-    
-    // 1. Simpan value form saat ini agar bisa dipakai di background fetch
-    const payload = {
-      title: newProgTitle, description: newProgDesc, event_date: newProgDate,
-      division_id: chosenDiv, created_by: currentUser?.name || "Kader", status: newProgStatus
-    };
+  const handleCreateProgram = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newProgTitle || !newProgDesc) return;
+      const chosenDiv =
+        currentUser?.role === "admin"
+          ? newProgDiv
+          : currentUser?.division_id || "div-psdam";
 
-    // 2. Optimistic UI update secara instan
-    const tempId = `temp-${Date.now()}`;
-    const optimisticProgram: Program = {
-      id: tempId,
-      ...payload,
-      status: payload.status as any,
-      approval_status: "pending",
-    };
+      // 1. Simpan value form saat ini agar bisa dipakai di background fetch
+      const payload = {
+        title: newProgTitle,
+        description: newProgDesc,
+        event_date: newProgDate,
+        division_id: chosenDiv,
+        created_by: currentUser?.name || "Kader",
+        status: newProgStatus,
+      };
 
-    updateDb(db => ({ ...db, programs: [optimisticProgram, ...db.programs] }));
-    triggerToast("Proposal program kerja berhasil bersirkulasi!");
-    setIsAddProgramOpen(false);
-    
-    // Reset form secepatnya
-    setNewProgTitle(""); setNewProgDesc(""); setNewProgDate("");
+      // 2. Optimistic UI update secara instan
+      const tempId = `temp-${Date.now()}`;
+      const optimisticProgram: Program = {
+        id: tempId,
+        ...payload,
+        status: payload.status as any,
+        approval_status: "pending",
+      };
 
-    // 3. Request background ke server
-    try {
-      const res = await fetch("/api/programs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        const ret = await res.json();
-        if (ret.success) {
-          // Ganti data sementara dengan data resmi dari server (terutama id asli)
-          updateDb(db => ({
-            ...db,
-            programs: db.programs.map(p => p.id === tempId ? ret.program : p)
-          }));
+      updateDb((db) => ({
+        ...db,
+        programs: [optimisticProgram, ...db.programs],
+      }));
+      triggerToast("Proposal program kerja berhasil bersirkulasi!");
+      setIsAddProgramOpen(false);
+
+      // Reset form secepatnya
+      setNewProgTitle("");
+      setNewProgDesc("");
+      setNewProgDate("");
+
+      // 3. Request background ke server
+      try {
+        const res = await fetch("/api/programs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const ret = await res.json();
+          if (ret.success) {
+            // Ganti data sementara dengan data resmi dari server (terutama id asli)
+            updateDb((db) => ({
+              ...db,
+              programs: db.programs.map((p) =>
+                p.id === tempId ? ret.program : p,
+              ),
+            }));
+          }
+        } else {
+          throw new Error("Gagal");
         }
-      } else {
-        throw new Error("Gagal");
+      } catch {
+        // Jika gagal, batalkan optimistic update
+        triggerToast("Gagal membuat program. Menghapus data sementara.");
+        updateDb((db) => ({
+          ...db,
+          programs: db.programs.filter((p) => p.id !== tempId),
+        }));
       }
-    } catch {
-      // Jika gagal, batalkan optimistic update
-      triggerToast("Gagal membuat program. Menghapus data sementara.");
-      updateDb(db => ({ ...db, programs: db.programs.filter(p => p.id !== tempId) }));
-    }
-  }, [newProgTitle, newProgDesc, newProgDate, newProgDiv, newProgStatus, currentUser, updateDb, triggerToast]);
+    },
+    [
+      newProgTitle,
+      newProgDesc,
+      newProgDate,
+      newProgDiv,
+      newProgStatus,
+      currentUser,
+      updateDb,
+      triggerToast,
+    ],
+  );
 
-  const handleApproveProgram = useCallback(async (id: string) => {
-    // Optimistic update dulu
-    updateDb(db => ({
-      ...db,
-      programs: db.programs.map(p => p.id === id ? { ...p, approval_status: "approved" as const } : p),
-    }));
-    triggerToast("Proposal program berhasil disetujui!");
-    try {
-      await fetch(`/api/programs/${id}/approve`, { method: "POST" });
-    } catch { console.error("Approve failed"); }
-  }, [updateDb, triggerToast]);
+  const handleApproveProgram = useCallback(
+    async (id: string) => {
+      // Optimistic update dulu
+      updateDb((db) => ({
+        ...db,
+        programs: db.programs.map((p) =>
+          p.id === id ? { ...p, approval_status: "approved" as const } : p,
+        ),
+      }));
+      triggerToast("Proposal program berhasil disetujui!");
+      try {
+        await fetch(`/api/programs/${id}/approve`, { method: "POST" });
+      } catch {
+        console.error("Approve failed");
+      }
+    },
+    [updateDb, triggerToast],
+  );
 
-  const handleRejectProgram = useCallback(async (id: string) => {
-    updateDb(db => ({
-      ...db,
-      programs: db.programs.map(p => p.id === id ? { ...p, approval_status: "rejected" as const } : p),
-    }));
-    triggerToast("Proposal program resmi ditolak.");
-    try {
-      await fetch(`/api/programs/${id}/reject`, { method: "POST" });
-    } catch { console.error("Reject failed"); }
-  }, [updateDb, triggerToast]);
+  const handleRejectProgram = useCallback(
+    async (id: string) => {
+      updateDb((db) => ({
+        ...db,
+        programs: db.programs.map((p) =>
+          p.id === id ? { ...p, approval_status: "rejected" as const } : p,
+        ),
+      }));
+      triggerToast("Proposal program resmi ditolak.");
+      try {
+        await fetch(`/api/programs/${id}/reject`, { method: "POST" });
+      } catch {
+        console.error("Reject failed");
+      }
+    },
+    [updateDb, triggerToast],
+  );
 
-  const handleDeleteProgram = useCallback(async (id: string) => {
-    updateDb(db => ({ ...db, programs: db.programs.filter(p => p.id !== id) }));
-    triggerToast("Program berhasil dihapus dari daftar.");
-    try {
-      await fetch(`/api/programs/${id}`, { method: "DELETE" });
-    } catch { console.error("Delete program failed"); }
-  }, [updateDb, triggerToast]);
+  const handleDeleteProgram = useCallback(
+    async (id: string) => {
+      updateDb((db) => ({
+        ...db,
+        programs: db.programs.filter((p) => p.id !== id),
+      }));
+      triggerToast("Program berhasil dihapus dari daftar.");
+      try {
+        await fetch(`/api/programs/${id}`, { method: "DELETE" });
+      } catch {
+        console.error("Delete program failed");
+      }
+    },
+    [updateDb, triggerToast],
+  );
 
-  const handleCompleteProgram = useCallback(async (id: string) => {
-    updateDb(db => ({
-      ...db,
-      programs: db.programs.map(p => p.id === id ? { ...p, status: "completed" as const } : p),
-    }));
-    triggerToast("Status program berhasil ditandai selesai! ");
-    try {
-      await fetch(`/api/programs/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "completed" }),
-      });
-    } catch { console.error("Complete program failed"); }
-  }, [updateDb, triggerToast]);
-
+  const handleCompleteProgram = useCallback(
+    async (id: string) => {
+      updateDb((db) => ({
+        ...db,
+        programs: db.programs.map((p) =>
+          p.id === id ? { ...p, status: "completed" as const } : p,
+        ),
+      }));
+      triggerToast("Status program berhasil ditandai selesai! ");
+      try {
+        await fetch(`/api/programs/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "completed" }),
+        });
+      } catch {
+        console.error("Complete program failed");
+      }
+    },
+    [updateDb, triggerToast],
+  );
 
   // Aspirasi
-  const handleAddAspiration = useCallback(async (name: string, category: string, message: string) => {
-    try {
-      const res = await fetch("/api/aspirations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ student_name: name, category, message }),
-      });
-      if (res.ok) {
-        const ret = await res.json();
-        updateDb(db => ({ ...db, aspirations: [ret.aspiration ?? { id: Date.now().toString(), student_name: name, category, message, status: "pending", created_at: "Baru saja" }, ...db.aspirations] }));
-        triggerToast("Aspirasi tersimpan dan bersirkulasi!");
+  const handleAddAspiration = useCallback(
+    async (name: string, category: string, message: string) => {
+      try {
+        const res = await fetch("/api/aspirations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ student_name: name, category, message }),
+        });
+        if (res.ok) {
+          const ret = await res.json();
+          updateDb((db) => ({
+            ...db,
+            aspirations: [
+              ret.aspiration ?? {
+                id: Date.now().toString(),
+                student_name: name,
+                category,
+                message,
+                status: "pending",
+                created_at: "Baru saja",
+              },
+              ...db.aspirations,
+            ],
+          }));
+          triggerToast("Aspirasi tersimpan dan bersirkulasi!");
+        }
+      } catch {
+        console.error("Add aspiration failed");
       }
-    } catch { console.error("Add aspiration failed"); }
-  }, [updateDb, triggerToast]);
+    },
+    [updateDb, triggerToast],
+  );
 
-  const handleUpdateAspirationStatus = useCallback(async (id: string, nextStatus: "pending" | "processing" | "completed") => {
-    updateDb(db => ({
-      ...db,
-      aspirations: db.aspirations.map(a => a.id === id ? { ...a, status: nextStatus } : a),
-    }));
-    triggerToast(`Aspirasi diperbarui ke status: ${nextStatus}`);
-    try {
-      await fetch(`/api/aspirations/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: nextStatus }),
-      });
-    } catch { console.error("Update aspiration failed"); }
-  }, [updateDb, triggerToast]);
+  const handleUpdateAspirationStatus = useCallback(
+    async (id: string, nextStatus: "pending" | "processing" | "completed") => {
+      updateDb((db) => ({
+        ...db,
+        aspirations: db.aspirations.map((a) =>
+          a.id === id ? { ...a, status: nextStatus } : a,
+        ),
+      }));
+      triggerToast(`Aspirasi diperbarui ke status: ${nextStatus}`);
+      try {
+        await fetch(`/api/aspirations/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: nextStatus }),
+        });
+      } catch {
+        console.error("Update aspiration failed");
+      }
+    },
+    [updateDb, triggerToast],
+  );
 
-  const handleDeleteAspiration = useCallback(async (id: string) => {
-    updateDb(db => ({ ...db, aspirations: db.aspirations.filter(a => a.id !== id) }));
-    triggerToast("Aspirasi berhasil dihapus!");
-    try {
-      const res = await fetch(`/api/aspirations/${id}`, { method: "DELETE" });
-      if (!res.ok) triggerToast("Gagal menghapus aspirasi.");
-    } catch { triggerToast("Koneksi gagal."); }
-  }, [updateDb, triggerToast]);
+  const handleDeleteAspiration = useCallback(
+    async (id: string) => {
+      updateDb((db) => ({
+        ...db,
+        aspirations: db.aspirations.filter((a) => a.id !== id),
+      }));
+      triggerToast("Aspirasi berhasil dihapus!");
+      try {
+        const res = await fetch(`/api/aspirations/${id}`, { method: "DELETE" });
+        if (!res.ok) triggerToast("Gagal menghapus aspirasi.");
+      } catch {
+        triggerToast("Koneksi gagal.");
+      }
+    },
+    [updateDb, triggerToast],
+  );
 
   // Talent
-  const handleAddTalent = useCallback(async (studentName: string, talent: string, achievement: string, certificate: string) => {
-    try {
-      const res = await fetch("/api/talents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ student_name: studentName, talent, achievement, certificate }),
-      });
-      if (res.ok) {
-        const ret = await res.json();
-        updateDb(db => ({ ...db, talents: [ret.talent ?? { id: Date.now().toString(), student_name: studentName, talent, achievement, certificate }, ...db.talents] }));
-        triggerToast("Profil minat bakat Anda sukses terunggah!");
+  const handleAddTalent = useCallback(
+    async (
+      studentName: string,
+      talent: string,
+      achievement: string,
+      certificate: string,
+    ) => {
+      try {
+        const res = await fetch("/api/talents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            student_name: studentName,
+            talent,
+            achievement,
+            certificate,
+          }),
+        });
+        if (res.ok) {
+          const ret = await res.json();
+          updateDb((db) => ({
+            ...db,
+            talents: [
+              ret.talent ?? {
+                id: Date.now().toString(),
+                student_name: studentName,
+                talent,
+                achievement,
+                certificate,
+              },
+              ...db.talents,
+            ],
+          }));
+          triggerToast("Profil minat bakat Anda sukses terunggah!");
+        }
+      } catch {
+        console.error("Add talent failed");
       }
-    } catch { console.error("Add talent failed"); }
-  }, [updateDb, triggerToast]);
+    },
+    [updateDb, triggerToast],
+  );
 
   // KIMAS Checkout
-  const handleMarketCheckout = useCallback(async (
-    items: { id: string; quantity: number }[],
-    identity?: { nama: string; kelas: string; noHp: string; tempatTinggal: string },
-  ) => {
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: currentUser?.id,
-          student_name: identity?.nama || currentUser?.name || "Mahasiswa",
-          kelas: identity?.kelas, no_hp: identity?.noHp, tempat_tinggal: identity?.tempatTinggal,
-          items,
-        }),
-      });
-      if (res.ok) {
-        // Update stok produk secara optimistic
-        updateDb(db => ({
-          ...db,
-          products: db.products.map(p => {
-            const ordered = items.find(i => i.id === p.id);
-            return ordered ? { ...p, stock: Math.max(0, p.stock - ordered.quantity), sold: (p.sold ?? 0) + ordered.quantity } : p;
+  const handleMarketCheckout = useCallback(
+    async (
+      items: { id: string; quantity: number }[],
+      identity?: {
+        nama: string;
+        kelas: string;
+        noHp: string;
+        tempatTinggal: string;
+      },
+    ) => {
+      try {
+        const res = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: currentUser?.id,
+            student_name: identity?.nama || currentUser?.name || "Mahasiswa",
+            kelas: identity?.kelas,
+            no_hp: identity?.noHp,
+            tempat_tinggal: identity?.tempatTinggal,
+            items,
           }),
-        }));
-        triggerToast(" Transaksi checkout berhasil dicatat!");
-      } else {
-        const errObj = await res.json();
-        triggerToast(errObj.error || "Gagal melakukan transaksi.");
+        });
+        if (res.ok) {
+          // Update stok produk secara optimistic
+          updateDb((db) => ({
+            ...db,
+            products: db.products.map((p) => {
+              const ordered = items.find((i) => i.id === p.id);
+              return ordered
+                ? {
+                    ...p,
+                    stock: Math.max(0, p.stock - ordered.quantity),
+                    sold: (p.sold ?? 0) + ordered.quantity,
+                  }
+                : p;
+            }),
+          }));
+          triggerToast(" Transaksi checkout berhasil dicatat!");
+        } else {
+          const errObj = await res.json();
+          triggerToast(errObj.error || "Gagal melakukan transaksi.");
+        }
+      } catch {
+        console.error("Checkout failed");
       }
-    } catch { console.error("Checkout failed"); }
-  }, [currentUser, updateDb, triggerToast]);
+    },
+    [currentUser, updateDb, triggerToast],
+  );
 
-  const handleAddProduct = useCallback(async (product_name: string, price: number, stock: number, image: string) => {
-    try {
-      const res = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_name, price, stock, image }),
-      });
-      if (res.ok) {
-        const ret = await res.json();
-        updateDb(db => ({ ...db, products: [ret.product ?? { id: Date.now().toString(), product_name, price, stock, image, sold: 0 }, ...db.products] }));
-        triggerToast(`Produk '${product_name}' diunggah sukses!`);
-      } else { triggerToast("Gagal mengunggah produk."); }
-    } catch { triggerToast("Koneksi gagal."); }
-  }, [updateDb, triggerToast]);
+  const handleAddProduct = useCallback(
+    async (
+      product_name: string,
+      price: number,
+      stock: number,
+      image: string,
+    ) => {
+      try {
+        const res = await fetch("/api/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ product_name, price, stock, image }),
+        });
+        if (res.ok) {
+          const ret = await res.json();
+          updateDb((db) => ({
+            ...db,
+            products: [
+              ret.product ?? {
+                id: Date.now().toString(),
+                product_name,
+                price,
+                stock,
+                image,
+                sold: 0,
+              },
+              ...db.products,
+            ],
+          }));
+          triggerToast(`Produk '${product_name}' diunggah sukses!`);
+        } else {
+          triggerToast("Gagal mengunggah produk.");
+        }
+      } catch {
+        triggerToast("Koneksi gagal.");
+      }
+    },
+    [updateDb, triggerToast],
+  );
 
-  const handleDeleteProduct = useCallback(async (id: string) => {
-    updateDb(db => ({ ...db, products: db.products.filter(p => p.id !== id) }));
-    triggerToast("Produk berhasil dihapus!");
-    try {
-      await fetch(`/api/products/${id}`, { method: "DELETE" });
-    } catch { console.error("Delete product failed"); }
-  }, [updateDb, triggerToast]);
+  const handleDeleteProduct = useCallback(
+    async (id: string) => {
+      updateDb((db) => ({
+        ...db,
+        products: db.products.filter((p) => p.id !== id),
+      }));
+      triggerToast("Produk berhasil dihapus!");
+      try {
+        await fetch(`/api/products/${id}`, { method: "DELETE" });
+      } catch {
+        console.error("Delete product failed");
+      }
+    },
+    [updateDb, triggerToast],
+  );
 
-  const handleUpdateProduct = useCallback(async (id: string, product_name: string, price: number, stock: number) => {
-    updateDb(db => ({
-      ...db,
-      products: db.products.map(p => p.id === id ? { ...p, product_name, price, stock } : p),
-    }));
-    triggerToast("Produk berhasil diperbarui!");
-    try {
-      await fetch(`/api/products/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_name, price, stock }),
-      });
-    } catch { triggerToast("Koneksi gagal."); }
-  }, [updateDb, triggerToast]);
+  const handleUpdateProduct = useCallback(
+    async (id: string, product_name: string, price: number, stock: number) => {
+      updateDb((db) => ({
+        ...db,
+        products: db.products.map((p) =>
+          p.id === id ? { ...p, product_name, price, stock } : p,
+        ),
+      }));
+      triggerToast("Produk berhasil diperbarui!");
+      try {
+        await fetch(`/api/products/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ product_name, price, stock }),
+        });
+      } catch {
+        triggerToast("Koneksi gagal.");
+      }
+    },
+    [updateDb, triggerToast],
+  );
 
   // Keuangan
-  const handleAddFinancial = useCallback(async (title: string, income: number, expense: number, file: string, type: "income" | "expense") => {
-    try {
-      const res = await fetch("/api/financials", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, income, expense, file, type }),
-      });
-      if (res.ok) {
-        const ret = await res.json();
-        updateDb(db => ({ ...db, financial_reports: [ret.report ?? { id: Date.now().toString(), title, income, expense, file, type, date: new Date().toISOString().split("T")[0] }, ...db.financial_reports] }));
-        triggerToast("Laporan kas keuangan berhasil ditambahkan.");
+  const handleAddFinancial = useCallback(
+    async (
+      title: string,
+      income: number,
+      expense: number,
+      file: string,
+      type: "income" | "expense",
+    ) => {
+      try {
+        const res = await fetch("/api/financials", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, income, expense, file, type }),
+        });
+        if (res.ok) {
+          const ret = await res.json();
+          updateDb((db) => ({
+            ...db,
+            financial_reports: [
+              ret.report ?? {
+                id: Date.now().toString(),
+                title,
+                income,
+                expense,
+                file,
+                type,
+                date: new Date().toISOString().split("T")[0],
+              },
+              ...db.financial_reports,
+            ],
+          }));
+          triggerToast("Laporan kas keuangan berhasil ditambahkan.");
+        }
+      } catch {
+        console.error("Add financial failed");
       }
-    } catch { console.error("Add financial failed"); }
-  }, [updateDb, triggerToast]);
+    },
+    [updateDb, triggerToast],
+  );
 
   // Notulensi
-  const handleAddNotulensi = useCallback(async (title: string, summary: string, author: string) => {
-    try {
-      const res = await fetch("/api/notulensi", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, summary, author }),
-      });
-      if (res.ok) {
-        const ret = await res.json();
-        updateDb(db => ({ ...db, notulensi: [ret.notulensi ?? { id: Date.now().toString(), title, summary, author, date: new Date().toISOString().split("T")[0] }, ...db.notulensi] }));
-        triggerToast("Keputusan notulen berhasil disimpan ke arsip.");
+  const handleAddNotulensi = useCallback(
+    async (title: string, summary: string, author: string) => {
+      try {
+        const res = await fetch("/api/notulensi", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, summary, author }),
+        });
+        if (res.ok) {
+          const ret = await res.json();
+          updateDb((db) => ({
+            ...db,
+            notulensi: [
+              ret.notulensi ?? {
+                id: Date.now().toString(),
+                title,
+                summary,
+                author,
+                date: new Date().toISOString().split("T")[0],
+              },
+              ...db.notulensi,
+            ],
+          }));
+          triggerToast("Keputusan notulen berhasil disimpan ke arsip.");
+        }
+      } catch {
+        console.error("Add notulensi failed");
       }
-    } catch { console.error("Add notulensi failed"); }
-  }, [updateDb, triggerToast]);
+    },
+    [updateDb, triggerToast],
+  );
 
   // Surat (Administrasi)
-  const handleAddLetter = useCallback(async (num: string, subject: string, type: string, date: string, handler: string, file_name: string | null) => {
-    try {
-      const res = await fetch("/api/letters", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ num, subject, type, date, handler, file_name }),
-      });
-      if (res.ok) {
-        const ret = await res.json();
-        updateDb(db => ({ ...db, letters: [ret.letter ?? { id: Date.now().toString(), num, subject, type, date, handler, file_name }, ...(db.letters ?? [])] }));
-        triggerToast(`Surat ${type} berhasil diarsipkan.`);
-      } else { triggerToast("Gagal menyimpan surat."); }
-    } catch { triggerToast("Koneksi gagal."); }
-  }, [updateDb, triggerToast]);
+  const handleAddLetter = useCallback(
+    async (
+      num: string,
+      subject: string,
+      type: string,
+      date: string,
+      handler: string,
+      file_name: string | null,
+    ) => {
+      try {
+        const res = await fetch("/api/letters", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            num,
+            subject,
+            type,
+            date,
+            handler,
+            file_name,
+          }),
+        });
+        if (res.ok) {
+          const ret = await res.json();
+          updateDb((db) => ({
+            ...db,
+            letters: [
+              ret.letter ?? {
+                id: Date.now().toString(),
+                num,
+                subject,
+                type,
+                date,
+                handler,
+                file_name,
+              },
+              ...(db.letters ?? []),
+            ],
+          }));
+          triggerToast(`Surat ${type} berhasil diarsipkan.`);
+        } else {
+          triggerToast("Gagal menyimpan surat.");
+        }
+      } catch {
+        triggerToast("Koneksi gagal.");
+      }
+    },
+    [updateDb, triggerToast],
+  );
 
   // Absensi
-  const handleAddAttendance = useCallback(async (event_name: string, participant_name: string, status: "Hadir" | "Izin" | "Sakit" | "Alpa", npm: string) => {
-    try {
-      const res = await fetch("/api/attendances", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event_name, participant_name, status, npm }),
-      });
-      if (res.ok) {
-        const ret = await res.json();
-        updateDb(db => ({ ...db, attendances: [ret.attendance ?? { id: Date.now().toString(), event_name, participant_name, status, npm, date: new Date().toISOString().split("T")[0] }, ...db.attendances] }));
-        triggerToast(`Absen ${status} tercantum untuk ${participant_name}!`);
+  const handleAddAttendance = useCallback(
+    async (
+      event_name: string,
+      participant_name: string,
+      status: "Hadir" | "Izin" | "Sakit" | "Alpa",
+      npm: string,
+    ) => {
+      try {
+        const res = await fetch("/api/attendances", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event_name, participant_name, status, npm }),
+        });
+        if (res.ok) {
+          const ret = await res.json();
+          updateDb((db) => ({
+            ...db,
+            attendances: [
+              ret.attendance ?? {
+                id: Date.now().toString(),
+                event_name,
+                participant_name,
+                status,
+                npm,
+                date: new Date().toISOString().split("T")[0],
+              },
+              ...db.attendances,
+            ],
+          }));
+          triggerToast(`Absen ${status} tercantum untuk ${participant_name}!`);
+        }
+      } catch {
+        console.error("Add attendance failed");
       }
-    } catch { console.error("Add attendance failed"); }
-  }, [updateDb, triggerToast]);
+    },
+    [updateDb, triggerToast],
+  );
 
   // Content Calendar
-  const handleAddContentCalendar = useCallback(async (post_title: string, platform: string, schedule_date: string, status: "draft" | "scheduled") => {
-    try {
-      const res = await fetch("/api/content-calendar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ post_title, platform, schedule_date, status }),
-      });
-      if (res.ok) {
-        const ret = await res.json();
-        updateDb(db => ({ ...db, content_calendar: [ret.entry ?? { id: Date.now().toString(), post_title, platform, schedule_date, status }, ...db.content_calendar] }));
-        triggerToast(`Jadwal publikasi '${post_title}' berhasil dirangkum.`);
+  const handleAddContentCalendar = useCallback(
+    async (
+      post_title: string,
+      platform: string,
+      schedule_date: string,
+      status: "draft" | "scheduled",
+    ) => {
+      try {
+        const res = await fetch("/api/content-calendar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ post_title, platform, schedule_date, status }),
+        });
+        if (res.ok) {
+          const ret = await res.json();
+          updateDb((db) => ({
+            ...db,
+            content_calendar: [
+              ret.entry ?? {
+                id: Date.now().toString(),
+                post_title,
+                platform,
+                schedule_date,
+                status,
+              },
+              ...db.content_calendar,
+            ],
+          }));
+          triggerToast(`Jadwal publikasi '${post_title}' berhasil dirangkum.`);
+        }
+      } catch {
+        console.error("Add content calendar failed");
       }
-    } catch { console.error("Add content calendar failed"); }
-  }, [updateDb, triggerToast]);
+    },
+    [updateDb, triggerToast],
+  );
 
   // Announcement
-  const handleAddAnnouncement = useCallback(async (title: string, content: string, category: string) => {
-    try {
-      const res = await fetch("/api/announcements", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content, category }),
-      });
-      if (res.ok) {
-        const ret = await res.json();
-        updateDb(db => ({ ...db, announcements: [ret.announcement ?? { id: Date.now().toString(), title, content, category, date: new Date().toISOString().split("T")[0] }, ...db.announcements] }));
-        triggerToast(`Pengumuman '${title}' sukses dipublikasikan!`);
+  const handleAddAnnouncement = useCallback(
+    async (title: string, content: string, category: string) => {
+      try {
+        const res = await fetch("/api/announcements", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, content, category }),
+        });
+        if (res.ok) {
+          const ret = await res.json();
+          updateDb((db) => ({
+            ...db,
+            announcements: [
+              ret.announcement ?? {
+                id: Date.now().toString(),
+                title,
+                content,
+                category,
+                date: new Date().toISOString().split("T")[0],
+              },
+              ...db.announcements,
+            ],
+          }));
+          triggerToast(`Pengumuman '${title}' sukses dipublikasikan!`);
+        }
+      } catch {
+        console.error("Add announcement failed");
       }
-    } catch { console.error("Add announcement failed"); }
-  }, [updateDb, triggerToast]);
+    },
+    [updateDb, triggerToast],
+  );
 
   // Gallery Album
-  const handleAddGalleryAlbum = useCallback(async (title: string, emoji: string, link: string) => {
-    try {
-      const res = await fetch("/api/gallery", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, emoji, link }),
-      });
-      if (res.ok) {
-        const ret = await res.json();
-        updateDb(db => ({ ...db, gallery_albums: [ret.album ?? { id: Date.now().toString(), title, emoji, link, count: 0, size: "0 MB" }, ...(db.gallery_albums ?? [])] }));
-        triggerToast(`Album dokumentasi '${title}' berhasil dibuat!`);
-      } else { triggerToast("Gagal membuat album dokumentasi."); }
-    } catch { triggerToast("Koneksi gagal."); }
-  }, [updateDb, triggerToast]);
+  const handleAddGalleryAlbum = useCallback(
+    async (title: string, emoji: string, link: string) => {
+      try {
+        const res = await fetch("/api/gallery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, emoji, link }),
+        });
+        if (res.ok) {
+          const ret = await res.json();
+          updateDb((db) => ({
+            ...db,
+            gallery_albums: [
+              ret.album ?? {
+                id: Date.now().toString(),
+                title,
+                emoji,
+                link,
+                count: 0,
+                size: "0 MB",
+              },
+              ...(db.gallery_albums ?? []),
+            ],
+          }));
+          triggerToast(`Album dokumentasi '${title}' berhasil dibuat!`);
+        } else {
+          triggerToast("Gagal membuat album dokumentasi.");
+        }
+      } catch {
+        triggerToast("Koneksi gagal.");
+      }
+    },
+    [updateDb, triggerToast],
+  );
 
   // User Management
-  const handleCreateUser = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUName || !newUEmail) return;
-    try {
-      const res = await fetch("/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newUName, email: newUEmail, role: newURole, division_id: newURole === "divisi" ? newUDiv : null, npm: newUNpm }),
-      });
-      if (res.ok) {
-        const ret = await res.json();
-        updateDb(db => ({ ...db, users: [...db.users, ret.user ?? { id: Date.now().toString(), name: newUName, email: newUEmail, role: newURole, division_id: newURole === "divisi" ? newUDiv : null, npm: newUNpm }] }));
-        triggerToast(`User '${newUName}' berhasil didaftarkan!`);
-        setNewUName(""); setNewUEmail(""); setNewUNpm(""); setIsAddUserOpen(false);
-      } else { triggerToast("Gagal menyambung ke server."); }
-    } catch { triggerToast("Koneksi gagal."); }
-  }, [newUName, newUEmail, newURole, newUDiv, newUNpm, updateDb, triggerToast]);
+  const handleCreateUser = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newUName || !newUEmail) return;
+      try {
+        const res = await fetch("/api/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: newUName,
+            email: newUEmail,
+            role: newURole,
+            division_id: newURole === "divisi" ? newUDiv : null,
+            npm: newUNpm,
+          }),
+        });
+        if (res.ok) {
+          const ret = await res.json();
+          updateDb((db) => ({
+            ...db,
+            users: [
+              ...db.users,
+              ret.user ?? {
+                id: Date.now().toString(),
+                name: newUName,
+                email: newUEmail,
+                role: newURole,
+                division_id: newURole === "divisi" ? newUDiv : null,
+                npm: newUNpm,
+              },
+            ],
+          }));
+          triggerToast(`User '${newUName}' berhasil didaftarkan!`);
+          setNewUName("");
+          setNewUEmail("");
+          setNewUNpm("");
+          setIsAddUserOpen(false);
+        } else {
+          triggerToast("Gagal menyambung ke server.");
+        }
+      } catch {
+        triggerToast("Koneksi gagal.");
+      }
+    },
+    [newUName, newUEmail, newURole, newUDiv, newUNpm, updateDb, triggerToast],
+  );
 
-  const handleDeleteUser = useCallback(async (id: string) => {
-    updateDb(db => ({ ...db, users: db.users.filter(u => u.id !== id) }));
-    triggerToast("Informasi user berhasil dihapus dari himpunan.");
-    try {
-      await fetch(`/api/users/${id}`, { method: "DELETE" });
-    } catch { console.error("Delete user failed"); }
-  }, [updateDb, triggerToast]);
+  const handleDeleteUser = useCallback(
+    async (id: string) => {
+      updateDb((db) => ({ ...db, users: db.users.filter((u) => u.id !== id) }));
+      triggerToast("Informasi user berhasil dihapus dari himpunan.");
+      try {
+        await fetch(`/api/users/${id}`, { method: "DELETE" });
+      } catch {
+        console.error("Delete user failed");
+      }
+    },
+    [updateDb, triggerToast],
+  );
 
   const handleExploreDivision = useCallback(() => {
     setIsLoginModalOpen(true);
   }, []);
-
 
   // Loading page fallback
   if (!db) {
@@ -597,7 +987,10 @@ export default function App() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <div className="bg-dark-surface border border-[#222226] max-w-sm w-full rounded-2xl p-7 relative overflow-hidden">
               <button
-                onClick={() => { setIsLoginModalOpen(false); setLoginError(""); }}
+                onClick={() => {
+                  setIsLoginModalOpen(false);
+                  setLoginError("");
+                }}
                 className="absolute top-4 right-4 text-gray-500 hover:text-white transition text-xs font-mono"
               >
                 ✕ TUTUP
@@ -636,7 +1029,10 @@ export default function App() {
                     autoFocus
                     className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-brand-orange transition"
                     value={loginEmail}
-                    onChange={(e) => { setLoginEmail(e.target.value); setLoginError(""); }}
+                    onChange={(e) => {
+                      setLoginEmail(e.target.value);
+                      setLoginError("");
+                    }}
                     required
                   />
                 </div>
@@ -645,7 +1041,9 @@ export default function App() {
                 {loginError && (
                   <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
                     <span className="text-red-400 text-xs mt-0.5"></span>
-                    <p className="text-red-400 text-xs leading-relaxed">{loginError}</p>
+                    <p className="text-red-400 text-xs leading-relaxed">
+                      {loginError}
+                    </p>
                   </div>
                 )}
 
@@ -660,7 +1058,9 @@ export default function App() {
               </form>
 
               <p className="mt-5 text-center text-[10px] text-gray-600">
-                Akun dikelola oleh Administrator sistem.<br/>Hubungi Admin jika belum terdaftar.
+                Akun dikelola oleh Administrator sistem.
+                <br />
+                Hubungi Admin jika belum terdaftar.
               </p>
             </div>
           </div>
@@ -676,14 +1076,16 @@ export default function App() {
     <div className="flex h-screen overflow-hidden bg-dark-bg font-sans text-gray-100 relative">
       {/* MOBILE OVERLAY */}
       {isMobileSidebarOpen && (
-        <div 
+        <div
           className="md:hidden fixed inset-0 bg-black/60 z-30"
           onClick={() => setIsMobileSidebarOpen(false)}
         />
       )}
 
       {/* SIDEBAR — MOBILE DRAWER (posisi absolut, hanya muncul saat dibuka) */}
-      <div className={`md:hidden fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <div
+        className={`md:hidden fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+      >
         <Sidebar
           currentUser={currentUser}
           divisions={db.divisions}
@@ -712,7 +1114,7 @@ export default function App() {
         {/* HEADER TOP STRIP */}
         <header className="h-16 border-b border-dark-border flex items-center justify-between px-4 md:px-8 bg-dark-surface sticky top-0 z-20">
           <div className="flex items-center gap-2 md:gap-3">
-            <button 
+            <button
               className="md:hidden p-1.5 text-gray-400 hover:text-white transition rounded-lg hover:bg-zinc-800"
               onClick={() => setIsMobileSidebarOpen(true)}
             >
@@ -880,10 +1282,8 @@ export default function App() {
               {/* DIVISION CHIEF VIEW */}
               {currentUser.role === "divisi" && (
                 <div className="space-y-6">
-                  <div className="bg-gradient-to-r from-brand-orange/5 to-red-600/5 border border-dark-border rounded-2xl p-6 relative overflow-hidden">
-                    <div className="absolute right-4 top-4 text-6xl text-brand-orange/5">
-                      
-                    </div>
+                  <div className="bg-gradient-to-r from-brand-orange/5 to-brand-orange-hover/10 border border-dark-border rounded-2xl p-6 relative overflow-hidden">
+                    <div className="absolute right-4 top-4 text-6xl text-brand-orange/5"></div>
                     <div className="max-w-xl space-y-2">
                       <span className="text-[10px] uppercase font-mono tracking-wider text-brand-orange">
                         Pengurus Divisi Aktif
@@ -947,12 +1347,13 @@ export default function App() {
                                 </td>
                                 <td className="p-3 text-right">
                                   <span
-                                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${p.approval_status === "approved"
+                                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                                      p.approval_status === "approved"
                                         ? "bg-green-500/10 text-green-400 border border-green-500/20"
                                         : p.approval_status === "rejected"
                                           ? "bg-red-500/10 text-red-500 border border-red-500/20"
                                           : "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20"
-                                      }`}
+                                    }`}
                                   >
                                     {p.approval_status.toUpperCase()}
                                   </span>
@@ -962,15 +1363,15 @@ export default function App() {
                           {db.programs.filter(
                             (p) => p.division_id === currentUser.division_id,
                           ).length === 0 && (
-                              <tr>
-                                <td
-                                  colSpan={4}
-                                  className="p-6 text-center text-gray-500"
-                                >
-                                  Anda belum mengajukan program kerja apa pun.
-                                </td>
-                              </tr>
-                            )}
+                            <tr>
+                              <td
+                                colSpan={4}
+                                className="p-6 text-center text-gray-500"
+                              >
+                                Anda belum mengajukan program kerja apa pun.
+                              </td>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -1044,7 +1445,7 @@ export default function App() {
                         >
                           <div>
                             <div className="text-xs font-bold text-white">
-                               Advokasi & Aspirasi
+                              Advokasi & Aspirasi
                             </div>
                             <div className="text-[10px] text-gray-500 mt-1">
                               Kirim keluhan fasilitas/kelas secara rahasia
@@ -1061,7 +1462,7 @@ export default function App() {
                         >
                           <div>
                             <div className="text-xs font-bold text-white">
-                               Delegasi Lomba & Prestasi
+                              Delegasi Lomba & Prestasi
                             </div>
                             <div className="text-[10px] text-gray-500 mt-1">
                               Daftar lomba eksternal / unggah sertifikat
@@ -1162,11 +1563,10 @@ export default function App() {
 
                 {db.programs.filter((p) => p.approval_status === "pending")
                   .length === 0 && (
-                    <div className="text-center py-16 text-gray-500 text-xs">
-                       Bersih! Semua proposal program kerja sudah tuntas
-                      ditinjau.
-                    </div>
-                  )}
+                  <div className="text-center py-16 text-gray-500 text-xs">
+                    Bersih! Semua proposal program kerja sudah tuntas ditinjau.
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1198,10 +1598,11 @@ export default function App() {
                   <button
                     key={stat}
                     onClick={() => setActiveDLogFilter(stat)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition ${activeDLogFilter === stat
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition ${
+                      activeDLogFilter === stat
                         ? "bg-brand-orange text-white"
                         : "bg-dark-bg border border-dark-border text-gray-400 hover:text-white"
-                      }`}
+                    }`}
                   >
                     {stat}
                   </button>
@@ -1259,24 +1660,26 @@ export default function App() {
                             </td>
                             <td className="p-3">
                               <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${p.status === "completed"
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  p.status === "completed"
                                     ? "bg-green-500/10 text-green-400"
                                     : p.status === "ongoing"
                                       ? "bg-blue-400/10 text-blue-400"
                                       : "bg-gray-500/10 text-gray-400"
-                                  }`}
+                                }`}
                               >
                                 {p.status.toUpperCase()}
                               </span>
                             </td>
                             <td className="p-3 text-center">
                               <span
-                                className={`inline-block px-2.5 py-0.5 text-[9px] uppercase font-bold rounded-full ${p.approval_status === "approved"
+                                className={`inline-block px-2.5 py-0.5 text-[9px] uppercase font-bold rounded-full ${
+                                  p.approval_status === "approved"
                                     ? "bg-green-500/10 text-green-400 border border-green-500/20"
                                     : p.approval_status === "rejected"
                                       ? "bg-red-500/10 text-red-500 border border-red-500/20"
                                       : "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20"
-                                  }`}
+                                }`}
                               >
                                 {p.approval_status}
                               </span>
@@ -1299,7 +1702,8 @@ export default function App() {
                                       open: true,
                                       title: "Hapus Program Kerja",
                                       message: `Apakah kamu yakin ingin menghapus proker "${p.title}"? Tindakan ini tidak bisa dibatalkan.`,
-                                      onConfirm: () => handleDeleteProgram(p.id),
+                                      onConfirm: () =>
+                                        handleDeleteProgram(p.id),
                                     });
                                   }}
                                   className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[10px] font-semibold transition border border-red-500/20 hover:border-red-500/40"
@@ -1335,7 +1739,7 @@ export default function App() {
                   onClick={() => setIsAddUserOpen(true)}
                   className="bg-brand-orange hover:bg-brand-orange-hover text-white text-xs font-semibold px-4 py-2 rounded-lg transition"
                 >
-                   Tambah Anggota / Pengurus
+                  Tambah Anggota / Pengurus
                 </button>
               </div>
 
@@ -1369,12 +1773,13 @@ export default function App() {
                           </td>
                           <td className="p-3">
                             <span
-                              className={`px-2.5 py-0.5 text-[10px] uppercase font-bold rounded-full ${u.role === "admin"
+                              className={`px-2.5 py-0.5 text-[10px] uppercase font-bold rounded-full ${
+                                u.role === "admin"
                                   ? "bg-red-500/10 text-red-400 border border-red-500/10"
                                   : u.role === "divisi"
                                     ? "bg-blue-500/10 text-blue-400 border border-blue-500/10"
                                     : "bg-gray-500/10 text-gray-400"
-                                }`}
+                              }`}
                             >
                               {u.role}
                             </span>
@@ -1824,7 +2229,9 @@ export default function App() {
               {/* Action Buttons */}
               <div className="flex items-center justify-end gap-3">
                 <button
-                  onClick={() => setConfirmModal(m => ({ ...m, open: false }))}
+                  onClick={() =>
+                    setConfirmModal((m) => ({ ...m, open: false }))
+                  }
                   className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-400 hover:text-white bg-zinc-800/60 hover:bg-zinc-700 border border-zinc-700 transition"
                 >
                   Batal
@@ -1832,7 +2239,7 @@ export default function App() {
                 <button
                   onClick={() => {
                     confirmModal.onConfirm();
-                    setConfirmModal(m => ({ ...m, open: false }));
+                    setConfirmModal((m) => ({ ...m, open: false }));
                   }}
                   className="px-4 py-2 rounded-lg text-xs font-bold text-white bg-red-600 hover:bg-red-500 transition flex items-center gap-1.5 shadow-lg shadow-red-900/30"
                 >
