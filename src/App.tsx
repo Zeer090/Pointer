@@ -165,8 +165,8 @@ export default function App() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  // Fetch awal (hanya sekali saat mount) & sync user ter-update
-  useEffect(() => {
+  // Fetch & sync DB data (dengan polling 4 detik untuk Aktivitas & Log Sistem Himpunan real-time)
+  const refreshDb = useCallback(() => {
     fetch("/api/db")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -188,6 +188,12 @@ export default function App() {
       })
       .catch((err) => console.error("Failed to fetch db:", err));
   }, []);
+
+  useEffect(() => {
+    refreshDb();
+    const interval = setInterval(refreshDb, 4000);
+    return () => clearInterval(interval);
+  }, [refreshDb]);
 
   // Update profile
   const openProfileModal = useCallback(() => {
@@ -1317,44 +1323,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-6">
-                    {/* ACTIVITY LOGS (Persisted server events) */}
-                    <div className="bg-dark-surface border border-dark-border p-6 rounded-2xl flex flex-col justify-between">
-                      <div>
-                        <h3 className="font-display font-bold text-base text-white mb-4">
-                          Aktivitas & Log Sistem Himpunan
-                        </h3>
-                        <div className="space-y-3.5 max-h-[280px] overflow-y-auto pr-2">
-                          {db.activity_logs?.map((log) => {
-                            const colors: Record<string, string> = {
-                              green: "bg-green-500",
-                              orange: "bg-brand-orange",
-                              blue: "bg-blue-400",
-                              red: "bg-red-500",
-                              purple: "bg-purple-500",
-                              yellow: "bg-yellow-500",
-                            };
-
-                            return (
-                              <div key={log.id} className="flex gap-3 text-xs">
-                                <div
-                                  className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${colors[log.color] || "bg-gray-400"}`}
-                                ></div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-gray-300 leading-normal">
-                                    {log.detail}
-                                  </p>
-                                  <span className="text-[10px] text-gray-500 font-mono mt-0.5 block">
-                                    {log.time}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </>
               )}
 
@@ -1573,6 +1541,54 @@ export default function App() {
                   </div>
                 </div>
               )}
+
+              {/* SHARED ACTIVITY LOGS FOR ALL ROLES (Real-time synced) */}
+              <div className="bg-dark-surface border border-dark-border p-6 rounded-2xl flex flex-col justify-between mt-6">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-display font-bold text-base text-white">
+                      Aktivitas & Log Sistem Himpunan
+                    </h3>
+                    <span className="text-[10px] font-mono text-brand-orange bg-brand-orange/10 border border-brand-orange/20 px-2 py-0.5 rounded animate-pulse">
+                      ● Live Real-time
+                    </span>
+                  </div>
+                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2">
+                    {db.activity_logs && db.activity_logs.length > 0 ? (
+                      db.activity_logs.map((log) => {
+                        const colors: Record<string, string> = {
+                          green: "bg-green-500",
+                          orange: "bg-brand-orange",
+                          blue: "bg-blue-400",
+                          red: "bg-red-500",
+                          purple: "bg-purple-500",
+                          yellow: "bg-yellow-500",
+                        };
+
+                        return (
+                          <div key={log.id} className="flex gap-3 text-xs">
+                            <div
+                              className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${colors[log.color] || "bg-gray-400"}`}
+                            ></div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-gray-300 leading-normal font-sans">
+                                {log.detail}
+                              </p>
+                              <span className="text-[10px] text-gray-500 font-mono mt-0.5 block">
+                                {log.time}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-xs text-gray-500 py-4 text-center">
+                        Belum ada catat rekaman aktivitas sistem.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
