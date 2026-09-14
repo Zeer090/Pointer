@@ -161,7 +161,7 @@ export default function LandingPage({
           </div>
 
           {/* TELEMETRY STATS GRID */}
-          <div className="pt-16 max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 border-t border-dark-border/60">
+          <div className="pt-16 max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 border-t border-dark-border/60">
             <div className="space-y-1">
               <div className="font-display font-extrabold text-3xl md:text-5xl text-brand-orange">
                 148+
@@ -172,7 +172,7 @@ export default function LandingPage({
             </div>
             <div className="space-y-1">
               <div className="font-display font-extrabold text-3xl md:text-5xl text-white">
-                {divisions.length || 7}
+                {divisions.filter((div) => div.name.toLowerCase() !== "humas").length || 7}
               </div>
               <div className="font-mono text-[10px] uppercase text-gray-400 tracking-widest font-semibold">
                 Divisi & Minat Bakat
@@ -184,14 +184,6 @@ export default function LandingPage({
               </div>
               <div className="font-mono text-[10px] uppercase text-gray-400 tracking-widest font-semibold">
                 Program Kerja Aktif
-              </div>
-            </div>
-            <div className="space-y-1">
-              <div className="font-display font-extrabold text-3xl md:text-5xl text-white">
-                100%
-              </div>
-              <div className="font-mono text-[10px] uppercase text-gray-400 tracking-widest font-semibold">
-                Lolos Evaluasi Sertikom
               </div>
             </div>
           </div>
@@ -292,90 +284,6 @@ export default function LandingPage({
             </div>
           </div>
         </div>
-
-        {/* TABEL INFORMASI PROFIL ORGANISASI (MEMENUHI SYARAT SERTIKOM #5) */}
-        <div className="pt-8">
-          <div className="bg-dark-surface border border-dark-border rounded-2xl p-6 md:p-8 space-y-6">
-            <div className="flex items-center justify-between border-b border-dark-border/80 pb-4">
-              <div className="space-y-1">
-                <div className="text-brand-orange font-mono text-[10px] uppercase tracking-widest font-bold">
-                  Profil Resmi
-                </div>
-                <h3 className="font-display font-bold text-lg md:text-xl text-white">
-                  Tabel Informasi Profil & Identitas Lembaga
-                </h3>
-              </div>
-              <span className="px-3 py-1 bg-brand-orange/10 border border-brand-orange/30 text-brand-orange rounded-full text-[10px] font-mono font-bold uppercase">
-                Tugas Sertikom Verified
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-sans border-collapse">
-                <tbody>
-                  <tr className="border-b border-dark-border/60 hover:bg-zinc-800/30 transition">
-                    <td className="py-3.5 px-4 font-mono font-bold text-brand-orange w-1/3">
-                      Nama Platform / Lembaga
-                    </td>
-                    <td className="py-3.5 px-4 text-white font-semibold">
-                      POINTER SYSTEM (Himpunan Mahasiswa Ilmu Komputer)
-                    </td>
-                  </tr>
-                  <tr className="border-b border-dark-border/60 hover:bg-zinc-800/30 transition">
-                    <td className="py-3.5 px-4 font-mono font-bold text-brand-orange">
-                      Nomor SK Organisasi
-                    </td>
-                    <td className="py-3.5 px-4 text-gray-300">
-                      SK/048/HIMA-POINTER/2026
-                    </td>
-                  </tr>
-                  <tr className="border-b border-dark-border/60 hover:bg-zinc-800/30 transition">
-                    <td className="py-3.5 px-4 font-mono font-bold text-brand-orange">
-                      Status & Akreditasi
-                    </td>
-                    <td className="py-3.5 px-4 text-gray-300">
-                      Aktif & Terakreditasi Unggul (Sertifikasi Kompetensi Web
-                      Dev)
-                    </td>
-                  </tr>
-                  <tr className="border-b border-dark-border/60 hover:bg-zinc-800/30 transition">
-                    <td className="py-3.5 px-4 font-mono font-bold text-brand-orange">
-                      Alamat & Sekretariat
-                    </td>
-                    <td className="py-3.5 px-4 text-gray-300">
-                      Gedung Lab Komputer Utama, Lantai 2, Kampus Departemen
-                      Ilmu Komputer
-                    </td>
-                  </tr>
-                  <tr className="border-b border-dark-border/60 hover:bg-zinc-800/30 transition">
-                    <td className="py-3.5 px-4 font-mono font-bold text-brand-orange">
-                      Email & Kontak Resmi
-                    </td>
-                    <td className="py-3.5 px-4 text-gray-300">
-                      sekretariat@pointer-system.org | (021) 555-7890
-                    </td>
-                  </tr>
-                  <tr className="border-b border-dark-border/60 hover:bg-zinc-800/30 transition">
-                    <td className="py-3.5 px-4 font-mono font-bold text-brand-orange">
-                      Dosen Pendamping / Pembina
-                    </td>
-                    <td className="py-3.5 px-4 text-gray-300">
-                      12 Dosen Pendamping Akademik & Keahlian
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-zinc-800/30 transition">
-                    <td className="py-3.5 px-4 font-mono font-bold text-brand-orange">
-                      Jumlah Anggota & Pengurus
-                    </td>
-                    <td className="py-3.5 px-4 text-gray-300">
-                      148 Mahasiswa Aktif (Terbagi dalam 7 Divisi Kerja)
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* STRUKTUR DIVISI SECTION */}
@@ -472,15 +380,14 @@ export default function LandingPage({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
           {programs.slice(0, 3).map((p) => {
             const icons: Record<string, string> = {
-              "div-psdam": "",
-              "div-medinfo": "",
-              "div-minbat": "",
-              "div-sosma": "",
-              "div-kimas": "️",
-              "div-keuangan": "",
-              "div-administrasi": "",
+              "div-psdam": "🎓",
+              "div-medinfo": "📢",
+              "div-minbat": "⚙️",
+              "div-sosma": "🤝",
+              "div-kimas": "🛍️",
+              "div-keuangan": "💰",
+              "div-administrasi": "📋",
             };
-
             return (
               <div
                 key={p.id}
@@ -506,7 +413,7 @@ export default function LandingPage({
 
                   <h3 className="font-display font-bold text-base text-white leading-normal flex items-start gap-2">
                     <span className="text-xl leading-none mt-0.5">
-                      {icons[p.division_id] || ""}
+                      {icons[p.division_id] || "📌"}
                     </span>
                     <span>{p.title}</span>
                   </h3>
@@ -540,6 +447,7 @@ export default function LandingPage({
           })}
         </div>
       </section>
+
 
       {/* DOKUMENTASI KEGIATAN */}
       <section

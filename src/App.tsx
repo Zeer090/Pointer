@@ -54,8 +54,28 @@ import {
 
 export default function App() {
   const [db, setDb] = useState<FullDatabase | null>(null);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState<string>("home");
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem("pointer_user");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [currentPage, setCurrentPage] = useState<string>(() => {
+    try {
+      const hash = window.location.hash.replace(/^#\/?/, "");
+      const landingAnchors = ["about", "divisions", "docu"];
+      if (hash && !landingAnchors.includes(hash)) {
+        return hash;
+      }
+      const saved = localStorage.getItem("pointer_page");
+      if (saved && saved !== "home") {
+        return saved;
+      }
+    } catch {}
+    return "home";
+  });
 
   // Modals state
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -113,12 +133,58 @@ export default function App() {
     setTimeout(() => setToastMsg(null), 3000);
   }, []);
 
-  // Fetch awal (hanya sekali saat mount)
+  // Sync currentPage ke localStorage dan URL Hash
+  useEffect(() => {
+    if (currentPage) {
+      try {
+        localStorage.setItem("pointer_page", currentPage);
+        if (currentPage !== "home") {
+          if (window.location.hash !== `#${currentPage}`) {
+            window.location.hash = currentPage;
+          }
+        } else {
+          const landingAnchors = ["#about", "#divisions", "#programs", "#docu"];
+          if (window.location.hash && !landingAnchors.includes(window.location.hash)) {
+            window.history.replaceState(null, "", window.location.pathname + window.location.search);
+          }
+        }
+      } catch {}
+    }
+  }, [currentPage]);
+
+  // Handle browser back/forward (hashchange)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, "");
+      const landingAnchors = ["about", "divisions", "docu"];
+      if (hash && !landingAnchors.includes(hash)) {
+        setCurrentPage(hash);
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  // Fetch awal (hanya sekali saat mount) & sync user ter-update
   useEffect(() => {
     fetch("/api/db")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (data) setDb(data);
+        if (data) {
+          setDb(data);
+          // Jika sudah ada logged in user, refresh datanya dari DB server
+          const savedUserStr = localStorage.getItem("pointer_user");
+          if (savedUserStr) {
+            try {
+              const savedUser = JSON.parse(savedUserStr);
+              const matched = data.users.find((u: User) => u.id === savedUser.id);
+              if (matched) {
+                setCurrentUser(matched);
+                localStorage.setItem("pointer_user", JSON.stringify(matched));
+              }
+            } catch {}
+          }
+        }
       })
       .catch((err) => console.error("Failed to fetch db:", err));
   }, []);
@@ -152,6 +218,9 @@ export default function App() {
           const retData = await res.json();
           if (retData.success) {
             setCurrentUser(retData.user);
+            try {
+              localStorage.setItem("pointer_user", JSON.stringify(retData.user));
+            } catch {}
             updateDb((db) => ({
               ...db,
               users: db.users.map((u) =>
@@ -186,6 +255,9 @@ export default function App() {
         if (res.ok && retData.success) {
           const user = retData.user;
           setCurrentUser(user);
+          try {
+            localStorage.setItem("pointer_user", JSON.stringify(user));
+          } catch {}
           setIsLoginModalOpen(false);
           setLoginEmail("");
           triggerToast(`Selamat datang, ${user.name}!`);
@@ -213,6 +285,13 @@ export default function App() {
   const handleLogout = useCallback(() => {
     setCurrentUser(null);
     setCurrentPage("home");
+    try {
+      localStorage.removeItem("pointer_user");
+      localStorage.removeItem("pointer_page");
+      if (window.location.hash) {
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      }
+    } catch {}
     triggerToast("Berhasil keluar sistem.");
   }, [triggerToast]);
 
