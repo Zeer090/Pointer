@@ -13,6 +13,7 @@ model User {
   id          String    @id @default(uuid())
   name        String
   email       String    @unique
+  password_hash String   @default("$2b$12$RNNxyYhgcz0lqgQOI0i9AeyIUS/313ZJJV/BfOmlULZK4WMTKraVC")
   npm         String?
   role        String    @default("mahasiswa")
   division_id String?

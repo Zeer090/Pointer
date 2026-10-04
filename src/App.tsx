@@ -92,6 +92,7 @@ export default function App() {
 
   // Form input states
   const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -144,8 +145,15 @@ export default function App() {
           }
         } else {
           const landingAnchors = ["#about", "#divisions", "#programs", "#docu"];
-          if (window.location.hash && !landingAnchors.includes(window.location.hash)) {
-            window.history.replaceState(null, "", window.location.pathname + window.location.search);
+          if (
+            window.location.hash &&
+            !landingAnchors.includes(window.location.hash)
+          ) {
+            window.history.replaceState(
+              null,
+              "",
+              window.location.pathname + window.location.search,
+            );
           }
         }
       } catch {}
@@ -167,7 +175,7 @@ export default function App() {
 
   // Fetch & sync DB data (dengan polling 4 detik untuk Aktivitas & Log Sistem Himpunan real-time)
   const refreshDb = useCallback(() => {
-    fetch("/api/db")
+    fetch(currentUser ? "/api/db" : "/api/public/db")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data) {
@@ -177,7 +185,9 @@ export default function App() {
           if (savedUserStr) {
             try {
               const savedUser = JSON.parse(savedUserStr);
-              const matched = data.users.find((u: User) => u.id === savedUser.id);
+              const matched = data.users.find(
+                (u: User) => u.id === savedUser.id,
+              );
               if (matched) {
                 setCurrentUser(matched);
                 localStorage.setItem("pointer_user", JSON.stringify(matched));
@@ -187,13 +197,34 @@ export default function App() {
         }
       })
       .catch((err) => console.error("Failed to fetch db:", err));
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     refreshDb();
     const interval = setInterval(refreshDb, 4000);
     return () => clearInterval(interval);
   }, [refreshDb]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user) {
+          setCurrentUser(data.user);
+          localStorage.setItem("pointer_user", JSON.stringify(data.user));
+        } else {
+          setCurrentUser(null);
+          localStorage.removeItem("pointer_user");
+          setCurrentPage("home");
+        }
+      })
+      .catch(() => {
+        setCurrentUser(null);
+        localStorage.removeItem("pointer_user");
+        setCurrentPage("home");
+      });
+  }, []);
 
   // Update profile
   const openProfileModal = useCallback(() => {
@@ -225,7 +256,10 @@ export default function App() {
           if (retData.success) {
             setCurrentUser(retData.user);
             try {
-              localStorage.setItem("pointer_user", JSON.stringify(retData.user));
+              localStorage.setItem(
+                "pointer_user",
+                JSON.stringify(retData.user),
+              );
             } catch {}
             updateDb((db) => ({
               ...db,
@@ -248,14 +282,17 @@ export default function App() {
   const handleLogin = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!loginEmail) return;
+      if (!loginEmail || !loginPassword) return;
       setLoginError("");
       setIsLoggingIn(true);
       try {
         const res = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: loginEmail.trim() }),
+          body: JSON.stringify({
+            email: loginEmail.trim(),
+            password: loginPassword,
+          }),
         });
         const retData = await res.json();
         if (res.ok && retData.success) {
@@ -266,6 +303,7 @@ export default function App() {
           } catch {}
           setIsLoginModalOpen(false);
           setLoginEmail("");
+          setLoginPassword("");
           triggerToast(`Selamat datang, ${user.name}!`);
           // Gunakan db yang sudah ada untuk cari divisi (tidak perlu fetch lagi)
           if (user.role === "admin") {
@@ -285,17 +323,23 @@ export default function App() {
         setIsLoggingIn(false);
       }
     },
-    [loginEmail, db, triggerToast],
+    [loginEmail, loginPassword, db, triggerToast],
   );
 
   const handleLogout = useCallback(() => {
-    setCurrentUser(null);
-    setCurrentPage("home");
+    fetch("/api/auth/logout", { method: "POST" }).finally(() => {
+      setCurrentUser(null);
+      setCurrentPage("home");
+    });
     try {
       localStorage.removeItem("pointer_user");
       localStorage.removeItem("pointer_page");
       if (window.location.hash) {
-        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        window.history.replaceState(
+          null,
+          "",
+          window.location.pathname + window.location.search,
+        );
       }
     } catch {}
     triggerToast("Berhasil keluar sistem.");
@@ -1096,7 +1140,7 @@ export default function App() {
                     Masuk POINTER SYSTEM
                   </h3>
                   <p className="text-gray-500 text-xs">
-                    Masukkan email akun Anda untuk melanjutkan
+                    Masukkan email dan password akun Anda untuk melanjutkan
                   </p>
                 </div>
               </div>
@@ -1116,6 +1160,24 @@ export default function App() {
                     value={loginEmail}
                     onChange={(e) => {
                       setLoginEmail(e.target.value);
+                      setLoginError("");
+                    }}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    id="login-password"
+                    placeholder="Masukkan password"
+                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-brand-orange transition"
+                    value={loginPassword}
+                    onChange={(e) => {
+                      setLoginPassword(e.target.value);
                       setLoginError("");
                     }}
                     required
@@ -1322,7 +1384,6 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-
                 </>
               )}
 
