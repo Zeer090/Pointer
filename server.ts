@@ -169,21 +169,11 @@ async function logActivity(detail: string, color: string = "orange") {
 // Public data needed by the landing page. Internal records are intentionally excluded.
 app.get("/api/public/db", async (req, res) => {
   try {
-    const [
-      divisions,
-      programs,
-      announcements,
-      content_calendar,
-      gallery_albums,
-    ] = await withDbRetry(() =>
-      Promise.all([
-        prisma.division.findMany(),
-        prisma.program.findMany({ orderBy: { id: "desc" } }),
-        prisma.announcement.findMany({ orderBy: { id: "desc" } }),
-        prisma.contentCalendar.findMany({ orderBy: { id: "desc" } }),
-        prisma.galleryAlbum.findMany({ orderBy: { id: "desc" } }),
-      ])
-    );
+    const divisions = await withDbRetry(() => prisma.division.findMany());
+    const programs = await withDbRetry(() => prisma.program.findMany({ orderBy: { id: "desc" } }));
+    const announcements = await withDbRetry(() => prisma.announcement.findMany({ orderBy: { id: "desc" } }));
+    const content_calendar = await withDbRetry(() => prisma.contentCalendar.findMany({ orderBy: { id: "desc" } }));
+    const gallery_albums = await withDbRetry(() => prisma.galleryAlbum.findMany({ orderBy: { id: "desc" } }));
 
     res.json({
       users: [],
@@ -211,51 +201,33 @@ app.get("/api/public/db", async (req, res) => {
 // Get full database for authenticated users only
 app.get("/api/db", authenticate, async (req, res) => {
   try {
-    const [
-      users,
-      divisions,
-      programs,
-      aspirations,
-      talents,
-      products,
-      transactions,
-      financial_reports,
-      attendances,
-      notulensi,
-      announcements,
-      content_calendar,
-      activity_logs,
-      letters,
-      gallery_albums,
-    ] = await withDbRetry(() =>
-      Promise.all([
-        prisma.user.findMany({
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            division_id: true,
-            npm: true,
-            jabatan: true,
-          },
-        }),
-        prisma.division.findMany(),
-        prisma.program.findMany({ orderBy: { id: "desc" } }),
-        prisma.aspiration.findMany({ orderBy: { id: "desc" } }),
-        prisma.talent.findMany({ orderBy: { id: "desc" } }),
-        prisma.product.findMany({ orderBy: { id: "desc" } }),
-        prisma.transaction.findMany({ orderBy: { id: "desc" } }),
-        prisma.financialReport.findMany({ orderBy: { id: "desc" } }),
-        prisma.attendance.findMany({ orderBy: { id: "desc" } }),
-        prisma.notulensi.findMany({ orderBy: { id: "desc" } }),
-        prisma.announcement.findMany({ orderBy: { id: "desc" } }),
-        prisma.contentCalendar.findMany({ orderBy: { id: "desc" } }),
-        prisma.activityLog.findMany({ orderBy: { id: "desc" }, take: 30 }),
-        prisma.letter.findMany({ orderBy: { id: "desc" } }),
-        prisma.galleryAlbum.findMany({ orderBy: { id: "desc" } }),
-      ])
+    const users = await withDbRetry(() =>
+      prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          division_id: true,
+          npm: true,
+          jabatan: true,
+        },
+      })
     );
+    const divisions = await withDbRetry(() => prisma.division.findMany());
+    const programs = await withDbRetry(() => prisma.program.findMany({ orderBy: { id: "desc" } }));
+    const aspirations = await withDbRetry(() => prisma.aspiration.findMany({ orderBy: { id: "desc" } }));
+    const talents = await withDbRetry(() => prisma.talent.findMany({ orderBy: { id: "desc" } }));
+    const products = await withDbRetry(() => prisma.product.findMany({ orderBy: { id: "desc" } }));
+    const transactions = await withDbRetry(() => prisma.transaction.findMany({ orderBy: { id: "desc" } }));
+    const financial_reports = await withDbRetry(() => prisma.financialReport.findMany({ orderBy: { id: "desc" } }));
+    const attendances = await withDbRetry(() => prisma.attendance.findMany({ orderBy: { id: "desc" } }));
+    const notulensi = await withDbRetry(() => prisma.notulensi.findMany({ orderBy: { id: "desc" } }));
+    const announcements = await withDbRetry(() => prisma.announcement.findMany({ orderBy: { id: "desc" } }));
+    const content_calendar = await withDbRetry(() => prisma.contentCalendar.findMany({ orderBy: { id: "desc" } }));
+    const activity_logs = await withDbRetry(() => prisma.activityLog.findMany({ orderBy: { id: "desc" }, take: 30 }));
+    const letters = await withDbRetry(() => prisma.letter.findMany({ orderBy: { id: "desc" } }));
+    const gallery_albums = await withDbRetry(() => prisma.galleryAlbum.findMany({ orderBy: { id: "desc" } }));
 
     res.json({
       users,
