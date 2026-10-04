@@ -10,14 +10,26 @@ const prisma = globalForPrisma.prisma || new PrismaClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-// Automatic retry helper for transient Prisma database errors (e.g. Neon cold start / P1001)
-async function withDbRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1500): Promise<T> {
+// Transient error codes that warrant an automatic retry
+const RETRYABLE_CODES = new Set(["P1001", "P1008", "P2024"]);
+const RETRYABLE_MSGS = ["Can't reach database server", "connection pool", "Timed out fetching"];
+
+// Automatic retry helper for transient Prisma errors (Neon cold-start P1001, pool timeout P2024)
+async function withDbRetry<T>(fn: () => Promise<T>, retries = 4, delayMs = 2000): Promise<T> {
   try {
     return await fn();
   } catch (err: any) {
-    if (retries > 0 && (err?.code === "P1001" || err?.message?.includes("Can't reach database server"))) {
-      console.warn(`[DB Warning] Database unreachable or cold-starting. Retrying in ${delayMs}ms... (${retries} attempts left)`);
+    const isRetryable =
+      RETRYABLE_CODES.has(err?.code) ||
+      RETRYABLE_MSGS.some((msg) => err?.message?.includes(msg));
+
+    if (retries > 0 && isRetryable) {
+      console.warn(
+        `[DB Retry] code=${err?.code ?? "unknown"} — retrying in ${delayMs}ms... (${retries} left)`
+      );
       await new Promise((r) => setTimeout(r, delayMs));
+      // On pool exhaustion, give Prisma a moment to reclaim connections
+      if (err?.code === "P2024") await new Promise((r) => setTimeout(r, 1000));
       return withDbRetry(fn, retries - 1, delayMs);
     }
     throw err;
@@ -284,9 +296,11 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email: email.trim().toLowerCase() },
-    });
+    const user = await withDbRetry(() =>
+      prisma.user.findUnique({
+        where: { email: email.trim().toLowerCase() },
+      })
+    );
 
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
       return res.status(401).json({
@@ -314,13 +328,19 @@ app.post("/api/auth/logout", (req, res) => {
 });
 
 app.get("/api/auth/me", authenticate, async (req, res) => {
-  const authUser = (req as AuthenticatedRequest).user;
-  const user = await prisma.user.findUnique({ where: { id: authUser.id } });
-  if (!user) {
-    clearAuthCookie(res);
-    return res.status(401).json({ error: "User not found" });
+  try {
+    const authUser = (req as AuthenticatedRequest).user;
+    const user = await withDbRetry(() =>
+      prisma.user.findUnique({ where: { id: authUser.id } })
+    );
+    if (!user) {
+      clearAuthCookie(res);
+      return res.status(401).json({ error: "User not found" });
+    }
+    res.json({ success: true, user: publicUser(user) });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch user" });
   }
-  res.json({ success: true, user: publicUser(user) });
 });
 
 // Profile modifications
@@ -331,10 +351,12 @@ app.put("/api/auth/profile", authenticate, async (req, res) => {
     if (id !== authUser.id)
       return res.status(403).json({ error: "Cannot edit another user" });
 
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data: { name, email, npm },
-    });
+    const updatedUser = await withDbRetry(() =>
+      prisma.user.update({
+        where: { id },
+        data: { name, email, npm },
+      })
+    );
 
     await logActivity(`Profil ${name} diperbarui`, "blue");
     res.json({ success: true, user: publicUser(updatedUser) });
