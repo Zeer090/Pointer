@@ -594,6 +594,10 @@ export default function App() {
 
   const handleUpdateAspirationStatus = useCallback(
     async (id: string, nextStatus: "pending" | "processing" | "completed") => {
+      if (currentUser?.role !== "admin" && currentUser?.role !== "divisi") {
+        triggerToast("Akses ditolak: Hanya pengurus yang dapat memproses aspirasi.");
+        return;
+      }
       updateDb((db) => ({
         ...db,
         aspirations: db.aspirations.map((a) =>
@@ -611,11 +615,15 @@ export default function App() {
         console.error("Update aspiration failed");
       }
     },
-    [updateDb, triggerToast],
+    [currentUser, updateDb, triggerToast],
   );
 
   const handleDeleteAspiration = useCallback(
     async (id: string) => {
+      if (currentUser?.role !== "admin" && currentUser?.role !== "divisi") {
+        triggerToast("Akses ditolak: Hanya pengurus yang dapat menghapus aspirasi.");
+        return;
+      }
       updateDb((db) => ({
         ...db,
         aspirations: db.aspirations.filter((a) => a.id !== id),
@@ -628,7 +636,7 @@ export default function App() {
         triggerToast("Koneksi gagal.");
       }
     },
-    [updateDb, triggerToast],
+    [currentUser, updateDb, triggerToast],
   );
 
   // Talent
@@ -2051,6 +2059,7 @@ export default function App() {
             <PsdamModule
               aspirations={db.aspirations}
               users={db.users}
+              currentUser={currentUser}
               onUpdateAspiration={handleUpdateAspirationStatus}
               onSubmitAspiration={handleAddAspiration}
               onDeleteAspiration={handleDeleteAspiration}
@@ -2265,6 +2274,7 @@ export default function App() {
               <PsdamModule
                 aspirations={db.aspirations}
                 users={db.users}
+                currentUser={currentUser}
                 onUpdateAspiration={handleUpdateAspirationStatus}
                 onSubmitAspiration={handleAddAspiration}
                 onDeleteAspiration={handleDeleteAspiration}

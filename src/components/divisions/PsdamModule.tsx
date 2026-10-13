@@ -5,6 +5,7 @@ import { MessageSquare, Users, CheckCircle2, ArrowRight, ShieldCheck, HeartPulse
 interface PsdamModuleProps {
   aspirations: Aspiration[];
   users: User[];
+  currentUser?: User | null;
   onUpdateAspiration: (id: string, newStatus: "pending" | "processing" | "completed") => void;
   onSubmitAspiration: (name: string, category: string, message: string) => void;
   onDeleteAspiration?: (id: string) => void;
@@ -13,10 +14,12 @@ interface PsdamModuleProps {
 export default function PsdamModule({
   aspirations,
   users,
+  currentUser = null,
   onUpdateAspiration,
   onSubmitAspiration,
   onDeleteAspiration
 }: PsdamModuleProps) {
+  const isPrivileged = currentUser?.role === "admin" || currentUser?.role === "divisi";
   const [aspName, setAspName] = useState("");
   const [aspCategory, setAspCategory] = useState<any>("Akademik");
   const [aspMessage, setAspMessage] = useState("");
@@ -214,28 +217,30 @@ Email : mi@polinela.ac.id
                   </div>
                 </div>
                 <p className="text-xs text-gray-300 leading-relaxed">{a.message}</p>
-                <div className="flex gap-2 pt-2 border-t border-dark-border">
-                  <button 
-                    onClick={() => onUpdateAspiration(a.id, "processing")}
-                    className="text-[10px] text-yellow-500 bg-yellow-500/5 hover:bg-yellow-500/10 border border-yellow-500/10 px-3 py-1 rounded transition"
-                  >
-                    Proses
-                  </button>
-                  <button 
-                    onClick={() => onUpdateAspiration(a.id, "completed")}
-                    className="text-[10px] text-green-500 bg-green-500/5 hover:bg-green-500/10 border border-green-500/10 px-3 py-1 rounded transition"
-                  >
-                    Selesaikan ✓
-                  </button>
-                  {onDeleteAspiration && (
+                {isPrivileged && (
+                  <div className="flex gap-2 pt-2 border-t border-dark-border">
                     <button 
-                      onClick={() => onDeleteAspiration(a.id)}
-                      className="text-[10px] text-red-500 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 px-3 py-1 rounded transition ml-auto"
+                      onClick={() => onUpdateAspiration(a.id, "processing")}
+                      className="text-[10px] text-yellow-500 bg-yellow-500/5 hover:bg-yellow-500/10 border border-yellow-500/10 px-3 py-1 rounded transition cursor-pointer"
                     >
-                      Hapus
+                      Proses
                     </button>
-                  )}
-                </div>
+                    <button 
+                      onClick={() => onUpdateAspiration(a.id, "completed")}
+                      className="text-[10px] text-green-500 bg-green-500/5 hover:bg-green-500/10 border border-green-500/10 px-3 py-1 rounded transition cursor-pointer"
+                    >
+                      Selesaikan ✓
+                    </button>
+                    {onDeleteAspiration && (
+                      <button 
+                        onClick={() => onDeleteAspiration(a.id)}
+                        className="text-[10px] text-red-500 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 px-3 py-1 rounded transition ml-auto cursor-pointer"
+                      >
+                        Hapus
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -282,9 +287,11 @@ Email : mi@polinela.ac.id
         {/* (BAGIAN PRESENSI SUDAH DIPINDAHKAN KE ADMINISTRASI) */}
       </div>
 
-      {/* PENGEMBANGAN & MONITORING TIMELINE */}
-      <div className="bg-dark-surface border border-dark-border rounded-xl p-6">
-        <h3 className="font-display font-bold text-lg text-white mb-6 flex items-center gap-2">
+      {/* PENGEMBANGAN & MONITORING TIMELINE & WHATSAPP BROADCAST (HANYA UNTUK PENGURUS/ADMIN) */}
+      {isPrivileged && (
+        <>
+          <div className="bg-dark-surface border border-dark-border rounded-xl p-6">
+            <h3 className="font-display font-bold text-lg text-white mb-6 flex items-center gap-2">
           <ShieldCheck className="text-brand-orange" size={20} />
           Alur Pengembangan Organisasi (Sistem Masuk POINTER)
         </h3>
@@ -447,6 +454,8 @@ Email : mi@polinela.ac.id
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
