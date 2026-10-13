@@ -251,7 +251,7 @@ function checkActionPermission(action, userRole) {
     };
   }
   if (role === "mahasiswa") {
-    if (action.type === "CREATE_ASPIRATION") {
+    if (action.type === "CREATE_ASPIRATION" || action.type === "UPDATE_ASPIRATION") {
       return { allowed: true };
     }
     if (action.type === "CREATE_PROGRAM") {
@@ -286,7 +286,7 @@ function checkActionPermission(action, userRole) {
     }
   }
   if (role === "divisi") {
-    if (action.type === "CREATE_ASPIRATION" || action.type === "CREATE_PROGRAM" || action.type === "UPDATE_ASPIRATION_STATUS" || action.type === "CREATE_FINANCIAL" || action.type === "CREATE_ANNOUNCEMENT" || action.type === "CREATE_TALENT") {
+    if (action.type === "CREATE_ASPIRATION" || action.type === "UPDATE_ASPIRATION" || action.type === "CREATE_PROGRAM" || action.type === "UPDATE_ASPIRATION_STATUS" || action.type === "CREATE_FINANCIAL" || action.type === "CREATE_ANNOUNCEMENT" || action.type === "CREATE_TALENT") {
       return { allowed: true };
     }
   }
@@ -483,6 +483,49 @@ async function executeAction(action, prisma2, userName) {
       });
       return { success: true, record, refreshModules: ["aspirations", "activity_logs"] };
     }
+    case "UPDATE_ASPIRATION": {
+      const targetAsp = action.targetId ? await prisma2.aspiration.findUnique({ where: { id: action.targetId } }) : await prisma2.aspiration.findFirst({
+        where: { student_name: accountName },
+        orderBy: { id: "desc" }
+      }) || await prisma2.aspiration.findFirst({
+        orderBy: { id: "desc" }
+      });
+      if (targetAsp) {
+        const record = await prisma2.aspiration.update({
+          where: { id: targetAsp.id },
+          data: {
+            message: action.data.message || targetAsp.message,
+            category: action.data.category || targetAsp.category
+          }
+        });
+        await prisma2.activityLog.create({
+          data: {
+            detail: `Aspirasi ${record.student_name} diperbarui: "${record.message.substring(0, 45)}..."`,
+            time: "Baru saja",
+            color: "blue"
+          }
+        });
+        return { success: true, record, refreshModules: ["aspirations", "activity_logs"] };
+      } else {
+        const record = await prisma2.aspiration.create({
+          data: {
+            student_name: accountName,
+            category: action.data.category || "Lainnya",
+            message: action.data.message,
+            status: "pending",
+            created_at: "Baru saja"
+          }
+        });
+        await prisma2.activityLog.create({
+          data: {
+            detail: `Aspirasi baru masuk dari ${record.student_name} (${record.category})`,
+            time: "Baru saja",
+            color: "orange"
+          }
+        });
+        return { success: true, record, refreshModules: ["aspirations", "activity_logs"] };
+      }
+    }
     case "CREATE_PROGRAM": {
       const divisionId = action.data.division_id || "div-psdam";
       const record = await prisma2.program.create({
@@ -595,6 +638,17 @@ Aspirasi kamu sudah tersimpan di sistem dan akan segera ditinjau oleh pengurus P
 \u2022 **Status:** \u{1F7E1} Menunggu Peninjauan
 
 > \u{1F4A1} Kamu bisa memantau perkembangannya kapan saja melalui menu **Aspirasi Saya**. Terima kasih atas masukannya! \u{1F60A}`;
+    case "UPDATE_ASPIRATION":
+      return `### \u2705 Aspirasi Berhasil Diperbarui!
+
+Aspirasi kamu telah diperjelas dan kami catat dengan detail berikut:
+
+**Rincian Aspirasi:**
+\u2022 **Kategori:** \u{1F3F7}\uFE0F ${record.category}
+\u2022 **Isi Aspirasi:** "${record.message}"
+\u2022 **Status:** \u{1F7E1} Menunggu Peninjauan
+
+> \u{1F4A1} Aspirasi ini telah tercatat resmi dan diteruskan ke Divisi PSDAM. Terima kasih! \u{1F60A}`;
     case "CREATE_PROGRAM":
       return `### \u2705 Program Kerja Berhasil Diajukan!
 
@@ -927,7 +981,20 @@ Kamu adalah asisten resmi untuk mahasiswa dan pengurus di lingkungan Politeknik 
 === ATURAN GAYA BAHASA ===
 - JANGAN PERNAH menyebut kata teknis server seperti "database", "PostgreSQL", atau "Prisma".
 - Gunakan bahasa Indonesia yang santun, luwes, ramah, dan format Markdown rapi (bold, bullet point, atau codeblock jika coding).
-- Pengguna saat ini: ${currentUserName || "Rekan Mahasiswa"} (Peran: ${currentUserRole}).`;
+- Pengguna saat ini: ${currentUserName || "Rekan Mahasiswa"} (Peran: ${currentUserRole}).
+
+=== INTEGRASI AKSI SISTEM DATABASE OTOMATIS (SANGAT KRUSIAL) ===
+Sistem ini terhubung langsung ke sistem database operasional HIMA POINTER.
+Jika dalam alur percakapan:
+1. Pengguna menyampaikan keluhan, saran, aspirasi, atau masukan (misal: "tolong permudah beasiswa...", "fasilitas lab komputer rusak", dsb):
+   - Kamu WAJIB menyusun respon konfirmasi penerimaan aspirasi dengan ramah dan solutif.
+   - Di baris TERAKHIR responmu, sertakan kode aksi sistem:
+   <<<ACTION:CREATE_ASPIRATION:{"category":"<Akademik/Fasilitas/Beasiswa/Kegiatan/Lainnya>","message":"<isi aspirasi yang jelas dan konkret>"}>>>
+2. Pengguna memperbarui, menyetujui salah satu nomor saran (misal: "ya saya mau no 1"), atau memperjelas aspirasi yang baru saja dibahas:
+   - Kamu WAJIB menyusun konfirmasi pembaruan aspirasi.
+   - Di baris TERAKHIR responmu, sertakan kode aksi pembaruan:
+   <<<ACTION:UPDATE_ASPIRATION:{"category":"<Kategori>","message":"<isi aspirasi lengkap yang telah disempurnakan>"}>>>
+3. Jangan menyertakan tag ACTION jika pengguna hanya sekadar bertanya info umum, menyapa, atau belum memberikan isi aspirasi sama sekali.`;
 }
 function instantChitchatReply(message, userName) {
   const q = message.toLowerCase().trim();
@@ -966,6 +1033,86 @@ Saya bisa membantu kamu dengan:
     return `Oke siap${name}! Ada yang bisa saya bantu lagi? \u{1F60A}`;
   }
   return `Halo${name}! \u{1F44B} Ada yang bisa saya bantu hari ini? Tanya apa saja seputar HIMA POINTER! \u{1F60A}`;
+}
+async function handleAiReplyWithDatabaseSync(rawText, prisma2, currentUserName, userMessage, history = []) {
+  let cleanReply = rawText.trim().replace(/\bdatabase\b/gi, "sistem");
+  const accountName = currentUserName && currentUserName.trim() && currentUserName !== "Mahasiswa" && currentUserName !== "Anonim" ? currentUserName.trim() : "Pengguna";
+  const actionTagMatch = cleanReply.match(
+    /<<<ACTION:(CREATE_ASPIRATION|UPDATE_ASPIRATION|CREATE_PROGRAM):(\{[\s\S]*?\})>>>/
+  );
+  if (actionTagMatch) {
+    const actionType = actionTagMatch[1];
+    try {
+      const actionData = JSON.parse(actionTagMatch[2]);
+      cleanReply = cleanReply.replace(actionTagMatch[0], "").trim();
+      const action = {
+        type: actionType,
+        data: actionData
+      };
+      const result = await executeAction(action, prisma2, accountName);
+      invalidateDbCache();
+      return {
+        reply: cleanReply,
+        actionExecuted: action,
+        refreshModules: result.refreshModules
+      };
+    } catch (err) {
+      console.error("[Action Tag Parse Error]", err);
+    }
+  }
+  const isCreatedMatch = /(?:Aspirasi\s+(?:Sudah|Telah|Berhasil)\s+(?:Dicatat|Diterima|Tersimpan|Dikirim)|Aspirasimu\s+(?:sudah|telah|berhasil)\s+(?:kami\s+terima|tersimpan|dicatat))/i.test(
+    cleanReply
+  );
+  const isUpdatedMatch = /(?:Aspirasi\s+Diperbarui|Aspirasimu\s+telah\s+diperjelas|Aspirasi\s+berhasil\s+diperbarui)/i.test(
+    cleanReply
+  );
+  if (isCreatedMatch || isUpdatedMatch) {
+    let category = "Lainnya";
+    const catMatch = cleanReply.match(
+      /(?:^|\b|\*|●|•)(?:Kategori|Bidang)\s*:\s*(?:🏷️\s*)?([A-Za-z\s]+?)(?:\n|\r|\*|●|<|$)/i
+    );
+    if (catMatch && catMatch[1]?.trim()) {
+      const c = catMatch[1].trim();
+      if (/akademik/i.test(c)) category = "Akademik";
+      else if (/fasilitas/i.test(c)) category = "Fasilitas";
+      else if (/beasiswa/i.test(c)) category = "Beasiswa";
+      else if (/kegiatan/i.test(c)) category = "Kegiatan";
+      else category = c.split(" ")[0];
+    } else {
+      const fullContext = (userMessage + " " + history.map((h) => h.text || "").join(" ")).toLowerCase();
+      if (fullContext.includes("beasiswa")) category = "Beasiswa";
+      else if (fullContext.includes("akademik") || fullContext.includes("kuliah")) category = "Akademik";
+      else if (fullContext.includes("fasilitas") || fullContext.includes("lab") || fullContext.includes("ac")) category = "Fasilitas";
+      else if (fullContext.includes("kegiatan")) category = "Kegiatan";
+    }
+    let msgText = "";
+    const msgMatch = cleanReply.match(
+      /(?:^|\b|\*|●|•)(?:Isi(?:\s+Aspirasi)?|Pesan)\s*:\s*["*]?([^\n\r*"]+)["*]?/i
+    );
+    if (msgMatch && msgMatch[1]?.trim() && msgMatch[1].trim().length >= 8) {
+      msgText = msgMatch[1].trim();
+    } else if (userMessage.length >= 10 && !isIntentWithoutDetails(userMessage)) {
+      msgText = userMessage.trim();
+    }
+    if (msgText) {
+      const actionType = isUpdatedMatch ? "UPDATE_ASPIRATION" : "CREATE_ASPIRATION";
+      const action = {
+        type: actionType,
+        data: {
+          category,
+          message: msgText
+        }
+      };
+      const result = await executeAction(action, prisma2, accountName);
+      invalidateDbCache();
+      return {
+        reply: cleanReply,
+        actionExecuted: action,
+        refreshModules: result.refreshModules
+      };
+    }
+  }
+  return { reply: cleanReply };
 }
 async function processAiChat(prisma2, genAI2, message, history = [], context = null) {
   const currentUserRole = context?.user?.role || "mahasiswa";
@@ -1035,7 +1182,7 @@ ${permission.reason}` };
     const groqModel = process.env.GROQ_MODEL || "qwen/qwen3.8-27b";
     const groqReply = await callGroqChat(groqKey, groqMessages, groqModel);
     if (groqReply?.trim()) {
-      return { reply: groqReply.trim().replace(/\bdatabase\b/gi, "sistem") };
+      return await handleAiReplyWithDatabaseSync(groqReply, prisma2, currentUserName, message, history);
     }
   }
   const openRouterKey = process.env.OPENROUTER_API_KEY;
@@ -1051,7 +1198,7 @@ ${permission.reason}` };
     const modelToUse = process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct:free";
     const routerReply = await callOpenRouterChat(openRouterKey, routerMessages, modelToUse);
     if (routerReply?.trim()) {
-      return { reply: routerReply.trim().replace(/\bdatabase\b/gi, "sistem") };
+      return await handleAiReplyWithDatabaseSync(routerReply, prisma2, currentUserName, message, history);
     }
   }
   for (const model of GEMINI_MODELS) {
@@ -1070,7 +1217,7 @@ ${permission.reason}` };
       );
       const text = response.candidates?.[0]?.content?.parts?.[0]?.text || response.text || "";
       if (text?.trim()) {
-        return { reply: text.trim().replace(/\bdatabase\b/gi, "sistem") };
+        return await handleAiReplyWithDatabaseSync(text, prisma2, currentUserName, message, history);
       }
     } catch {
     }
