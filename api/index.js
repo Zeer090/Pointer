@@ -1128,6 +1128,9 @@ async function logActivity(detail, color = "orange") {
   }
 }
 app.get("/api/public/db", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   try {
     const divisions = await withDbRetry(() => prisma.division.findMany());
     const programs = await withDbRetry(() => prisma.program.findMany({ orderBy: { id: "desc" } }));
@@ -1157,6 +1160,9 @@ app.get("/api/public/db", async (req, res) => {
   }
 });
 app.get("/api/db", authenticate, async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   try {
     const users = await withDbRetry(
       () => prisma.user.findMany({

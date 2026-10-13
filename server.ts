@@ -171,6 +171,9 @@ async function logActivity(detail: string, color: string = "orange") {
 
 // Public data needed by the landing page. Internal records are intentionally excluded.
 app.get("/api/public/db", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   try {
     const divisions = await withDbRetry(() => prisma.division.findMany());
     const programs = await withDbRetry(() => prisma.program.findMany({ orderBy: { id: "desc" } }));
@@ -203,6 +206,9 @@ app.get("/api/public/db", async (req, res) => {
 
 // Get full database for authenticated users only
 app.get("/api/db", authenticate, async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   try {
     const users = await withDbRetry(() =>
       prisma.user.findMany({

@@ -116,10 +116,14 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
       jakartaToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date());
     } catch {}
 
+    const isTargetingToday =
+      exportMode === "today" ||
+      (exportMode === "single" && (pdfDate === localToday || pdfDate === jakartaToday));
+
     const list = attendances.filter(at => {
       const atDate = getAttendanceDate(at);
       if (!atDate) return false;
-      if (exportMode === "today") {
+      if (isTargetingToday) {
         return atDate === localToday || atDate === jakartaToday;
       } else if (exportMode === "single") {
         return atDate === pdfDate;

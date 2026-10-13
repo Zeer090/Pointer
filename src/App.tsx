@@ -201,9 +201,17 @@ export default function App() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  // Fetch & sync DB data (dengan polling 4 detik untuk Aktivitas & Log Sistem Himpunan real-time)
+  // Fetch & sync DB data (dengan polling 2 detik untuk real-time update presensi & aktivitas)
   const refreshDb = useCallback(() => {
-    fetch(currentUser ? "/api/db" : "/api/public/db")
+    const endpoint = currentUser ? "/api/db" : "/api/public/db";
+    fetch(`${endpoint}?_t=${Date.now()}`, {
+      credentials: "include",
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      },
+    })
       .then(async (r) => {
         if (!r.ok) {
           throw new Error(`Server returned HTTP ${r.status}`);
@@ -238,7 +246,7 @@ export default function App() {
 
   useEffect(() => {
     refreshDb();
-    const interval = setInterval(refreshDb, 4000);
+    const interval = setInterval(refreshDb, 2000);
     return () => clearInterval(interval);
   }, [refreshDb]);
 
@@ -2095,8 +2103,9 @@ export default function App() {
               onAttendanceSuccess={(newAtt) => {
                 updateDb((prev) => ({
                   ...prev,
-                  attendances: [newAtt, ...(prev.attendances || [])],
+                  attendances: [newAtt, ...(prev.attendances || []).filter(a => a.id !== newAtt.id)],
                 }));
+                refreshDb();
                 triggerToast(`Presensi berhasil dicatat: ${newAtt.participant_name} (${newAtt.status})`);
               }}
             />
@@ -2676,8 +2685,9 @@ export default function App() {
         onAttendanceSuccess={(newAtt) => {
           updateDb((prev) => ({
             ...prev,
-            attendances: [newAtt, ...(prev.attendances || [])],
+            attendances: [newAtt, ...(prev.attendances || []).filter(a => a.id !== newAtt.id)],
           }));
+          refreshDb();
           triggerToast(`Presensi berhasil dicatat: ${newAtt.participant_name} (${newAtt.status})`);
         }}
       />
