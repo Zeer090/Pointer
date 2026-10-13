@@ -141,10 +141,145 @@ Email : mi@polinela.ac.id
   const handleAspSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!aspMessage) return;
-    onSubmitAspiration(aspName || "Anonim", aspCategory, aspMessage);
+    const authorName = aspName.trim() || currentUser?.name || "Anonim";
+    onSubmitAspiration(authorName, aspCategory, aspMessage);
     setAspName("");
     setAspMessage("");
   };
+
+  // TAMPILAN KHUSUS MAHASISWA: HANYA PENGAJUAN ASPIRASI
+  if (!isPrivileged) {
+    const myAspirations = aspirations.filter(
+      (a) =>
+        currentUser?.name &&
+        a.student_name.toLowerCase() === currentUser.name.toLowerCase()
+    );
+
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto animate-fadeIn">
+        {/* BANNER PENGAJUAN */}
+        <div className="bg-gradient-to-r from-brand-orange/10 via-brand-orange-hover/10 to-transparent border border-brand-orange/30 rounded-2xl p-6 sm:p-8 relative overflow-hidden">
+          <div className="max-w-xl space-y-2">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-brand-orange font-bold px-2.5 py-0.5 rounded bg-brand-orange/10 border border-brand-orange/20 inline-block">
+              Pos Advokasi & Aspirasi Mahasiswa
+            </span>
+            <h2 className="font-display font-black text-2xl sm:text-3xl text-white">
+              Sampaikan Aspirasi Anda
+            </h2>
+            <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
+              Punya keluhan fasilitas, masukan akademik, kendala perkuliahan, atau usulan kegiatan? 
+              Aspirasi Anda akan ditampung dan ditinjau secara resmi oleh Divisi PSDAM HIMA POINTER.
+            </p>
+          </div>
+        </div>
+
+        {/* FORMULIR PENGAJUAN ASPIRASI */}
+        <div className="bg-dark-surface border border-dark-border rounded-2xl p-6 sm:p-8 shadow-xl">
+          <div className="flex items-center gap-3 border-b border-dark-border pb-4 mb-6">
+            <div className="p-2.5 rounded-xl bg-brand-orange/15 border border-brand-orange/30 text-brand-orange">
+              <MessageSquare size={20} />
+            </div>
+            <div>
+              <h3 className="font-display font-bold text-base text-white">
+                Formulir Pengajuan Aspirasi
+              </h3>
+              <p className="text-xs text-gray-400">
+                Kirim aspirasi, keluhan, atau ide pengembangan Anda di bawah ini.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleAspSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-mono uppercase text-gray-400 tracking-wider block mb-1.5 font-bold">
+                  Nama Mahasiswa
+                </label>
+                <input
+                  type="text"
+                  placeholder={currentUser?.name || "Nama Lengkap (atau kosongkan untuk Anonim)"}
+                  className="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-brand-orange transition"
+                  value={aspName}
+                  onChange={(e) => setAspName(e.target.value)}
+                />
+                <span className="text-[10px] text-gray-500 mt-1 block">
+                  * Biarkan kosong untuk mengirim secara Anonim
+                </span>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-mono uppercase text-gray-400 tracking-wider block mb-1.5 font-bold">
+                  Kategori Aspirasi
+                </label>
+                <select
+                  className="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-brand-orange transition"
+                  value={aspCategory}
+                  onChange={(e: any) => setAspCategory(e.target.value)}
+                >
+                  <option value="Akademik">Akademik (Dosen, Mata Kuliah, Jadwal)</option>
+                  <option value="Fasilitas">Fasilitas Kampus (Lab, AC, Wifi, Proyektor)</option>
+                  <option value="Beasiswa">Beasiswa & Finansial</option>
+                  <option value="Kegiatan">Kegiatan Mahasiswa & Lomba</option>
+                  <option value="Lainnya">Lainnya / Saran Terbuka</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-mono uppercase text-gray-400 tracking-wider block mb-1.5 font-bold">
+                Isi Pesan Aspirasi / Keluhan / Saran
+              </label>
+              <textarea
+                placeholder="Tuliskan keluhan atau saran Anda secara jelas dan sopan..."
+                className="w-full bg-dark-bg border border-dark-border rounded-xl p-4 text-xs text-white h-32 focus:outline-none focus:border-brand-orange transition resize-none leading-relaxed"
+                value={aspMessage}
+                onChange={(e) => setAspMessage(e.target.value)}
+                required
+              ></textarea>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-6 py-3 bg-brand-orange hover:bg-brand-orange-hover text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 cursor-pointer"
+            >
+              <Send size={14} /> Kirim Aspirasi Mahasiswa
+            </button>
+          </form>
+        </div>
+
+        {/* STATUS ASPIRASI SAYA (HANYA YANG DIAJUKAN OLEH MAHASISWA INI) */}
+        {myAspirations.length > 0 && (
+          <div className="bg-dark-surface border border-dark-border rounded-2xl p-6">
+            <h4 className="font-display font-bold text-sm text-white mb-4 flex items-center gap-2 border-b border-dark-border pb-3">
+              <CheckCircle2 size={16} className="text-brand-orange" /> Riwayat Aspirasi Saya ({myAspirations.length})
+            </h4>
+            <div className="space-y-3">
+              {myAspirations.map((a) => (
+                <div key={a.id} className="bg-dark-bg/60 border border-dark-border p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[9px] uppercase bg-brand-orange/15 text-brand-orange border border-brand-orange/30 px-2 py-0.5 rounded-full font-bold">
+                        {a.category}
+                      </span>
+                      <span className="text-[10px] text-gray-500 font-mono">{a.created_at}</span>
+                    </div>
+                    <p className="text-xs text-gray-200">{a.message}</p>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold shrink-0 self-start sm:self-center ${
+                    a.status === "completed" ? "bg-green-500/15 text-green-400 border border-green-500/30" :
+                    a.status === "processing" ? "bg-yellow-500/15 text-yellow-400 border border-yellow-500/30" :
+                    "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                  }`}>
+                    {a.status === "completed" ? "✓ SELESAI" : a.status === "processing" ? "SEDANG DIPROSES" : "MENUNGGU PENINJAUAN"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
