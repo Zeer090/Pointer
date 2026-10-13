@@ -54,6 +54,7 @@ import {
   Trash2,
   Menu,
   QrCode,
+  Download,
 } from "lucide-react";
 
 export default function App() {
@@ -2125,11 +2126,17 @@ export default function App() {
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
+                      onClick={() => setCurrentPage("administrasi")}
+                      className="px-3.5 py-2.5 rounded-xl bg-dark-bg/80 hover:bg-dark-bg text-gray-300 hover:text-white border border-dark-border text-xs font-semibold transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+                    >
+                      <Download size={14} className="text-brand-orange" /> Buka Rekap & Unduh PDF
+                    </button>
+                    <button
                       onClick={() => {
                         setAttendanceInitialEvent("");
                         setIsAttendanceQrOpen(true);
                       }}
-                      className="px-4 py-2.5 rounded-xl bg-brand-orange hover:bg-brand-orange-hover text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-orange-500/20 shrink-0"
+                      className="px-4 py-2.5 rounded-xl bg-brand-orange hover:bg-brand-orange-hover text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-orange-500/20 shrink-0 cursor-pointer"
                     >
                       <QrCode size={16} /> Buat QR Code Baru
                     </button>
@@ -2148,7 +2155,20 @@ export default function App() {
                   <div className="bg-dark-bg/60 border border-dark-border rounded-xl p-4">
                     <div className="text-[11px] font-mono text-gray-400 uppercase">Total Presensi Hari Ini</div>
                     <div className="text-2xl font-bold font-display text-brand-orange mt-1">
-                      {db.attendances?.filter((a) => a.date === new Date().toISOString().split("T")[0]).length || 0}
+                      {(() => {
+                        const d = new Date();
+                        const localToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                        let jktToday = localToday;
+                        try {
+                          jktToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date());
+                        } catch {}
+                        return (
+                          db.attendances?.filter((a) => {
+                            const dateOnly = (a.date || "").split("T")[0].split(" ")[0];
+                            return dateOnly === localToday || dateOnly === jktToday;
+                          }).length || 0
+                        );
+                      })()}
                     </div>
                     <div className="text-[11px] text-gray-400 mt-1">Hari ini</div>
                   </div>

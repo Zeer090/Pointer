@@ -1178,7 +1178,7 @@ app.get("/api/db", authenticate, async (req, res) => {
     const products = await withDbRetry(() => prisma.product.findMany({ orderBy: { id: "desc" } }));
     const transactions = await withDbRetry(() => prisma.transaction.findMany({ orderBy: { id: "desc" } }));
     const financial_reports = await withDbRetry(() => prisma.financialReport.findMany({ orderBy: { id: "desc" } }));
-    const attendances = await withDbRetry(() => prisma.attendance.findMany({ orderBy: { id: "desc" } }));
+    const attendances = await withDbRetry(() => prisma.attendance.findMany({ orderBy: [{ date: "desc" }, { id: "desc" }] }));
     const notulensi = await withDbRetry(() => prisma.notulensi.findMany({ orderBy: { id: "desc" } }));
     const announcements = await withDbRetry(() => prisma.announcement.findMany({ orderBy: { id: "desc" } }));
     const content_calendar = await withDbRetry(() => prisma.contentCalendar.findMany({ orderBy: { id: "desc" } }));
@@ -1642,13 +1642,15 @@ app.post(
   async (req, res) => {
     try {
       const { event_name, participant_name, status, npm } = req.body;
+      const jakartaToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(/* @__PURE__ */ new Date());
+      const attendanceDate = (req.body.date || "").trim() || jakartaToday;
       const newAtt = await prisma.attendance.create({
         data: {
           event_name,
           participant_name,
           status,
           npm: npm || `2201${Math.floor(Math.random() * 900 + 100)}`,
-          date: (/* @__PURE__ */ new Date()).toISOString().split("T")[0]
+          date: attendanceDate
         }
       });
       await logActivity(
@@ -1668,7 +1670,8 @@ app.post("/api/attendances/self-checkin", async (req, res) => {
       return res.status(400).json({ error: "Nama agenda dan nama peserta wajib diisi." });
     }
     const cleanNpm = (npm || "").trim() || `2201${Math.floor(Math.random() * 900 + 100)}`;
-    const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    const jakartaToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(/* @__PURE__ */ new Date());
+    const today = (req.body.date || "").trim() || jakartaToday;
     const existing = await prisma.attendance.findFirst({
       where: {
         event_name: event_name.trim(),

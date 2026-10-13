@@ -88,7 +88,9 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
   };
 
   const getAttendanceDate = (at: Attendance) => {
-    if (at.date) return at.date;
+    if (at.date) {
+      return at.date.split("T")[0].split(" ")[0].trim();
+    }
     if (at.id && at.id.startsWith("att-")) {
       const ts = parseInt(at.id.replace("att-", ""), 10);
       if (!isNaN(ts)) {
@@ -103,16 +105,22 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
   };
 
   const [pdfDate, setPdfDate] = useState(getLocalDateString());
-  const [exportMode, setExportMode] = useState<"today" | "single" | "range" | "all">("single");
+  const [exportMode, setExportMode] = useState<"today" | "single" | "range" | "all">("today");
   const [startDate, setStartDate] = useState(getLocalDateString());
   const [endDate, setEndDate] = useState(getLocalDateString());
 
   const getFilteredAttendances = () => {
-    return attendances.filter(at => {
+    const localToday = getLocalDateString();
+    let jakartaToday = localToday;
+    try {
+      jakartaToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date());
+    } catch {}
+
+    const list = attendances.filter(at => {
       const atDate = getAttendanceDate(at);
       if (!atDate) return false;
       if (exportMode === "today") {
-        return atDate === getLocalDateString();
+        return atDate === localToday || atDate === jakartaToday;
       } else if (exportMode === "single") {
         return atDate === pdfDate;
       } else if (exportMode === "range") {
@@ -122,6 +130,12 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
       }
       return false;
     });
+
+    return [...list].sort((a, b) => {
+      const dateA = getAttendanceDate(a);
+      const dateB = getAttendanceDate(b);
+      return dateB.localeCompare(dateA);
+    });
   };
 
   const filteredAtts = getFilteredAttendances();
@@ -130,7 +144,9 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
   const loadImage = (url: string): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = "Anonymous";
+      if (url.startsWith("http://") || url.startsWith("https://")) {
+        img.crossOrigin = "Anonymous";
+      }
       img.onload = () => resolve(img);
       img.onerror = (e) => reject(e);
       img.src = url;
@@ -138,6 +154,10 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
   };
 
   const exportPDF = async () => {
+    if (filteredAtts.length === 0) {
+      alert("Tidak ada data presensi yang sesuai dengan filter tanggal saat ini.\n\nSilakan pilih filter 'Hari Ini', 'Pilih Tanggal', atau 'Semua Hari' untuk melihat data.");
+      return;
+    }
     try {
     const doc = new jsPDF({
       orientation: "portrait",
@@ -308,7 +328,7 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
       });
 
       // Summary stats below table
-      const finalY = (doc as any).lastAutoTable.finalY + 6;
+      const finalY = ((doc as any).lastAutoTable?.finalY ?? 140) + 6;
       doc.setFont("Times", "normal");
       doc.setFontSize(8.5);
       doc.setTextColor(80, 80, 80);
@@ -430,7 +450,7 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
       });
 
       // Summary stats
-      const finalY = (doc as any).lastAutoTable.finalY + 6;
+      const finalY = ((doc as any).lastAutoTable?.finalY ?? 140) + 6;
       doc.setFont("Times", "normal");
       doc.setFontSize(8.5);
       doc.setTextColor(80, 80, 80);
@@ -464,7 +484,10 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
 
   const exportExcel = async () => {
     const dataToExport = filteredAtts;
-    if (dataToExport.length === 0) return;
+    if (dataToExport.length === 0) {
+      alert("Tidak ada data presensi yang sesuai dengan filter tanggal saat ini untuk diekspor ke Excel.");
+      return;
+    }
 
     try {
       const workbook = new ExcelJS.Workbook();
@@ -966,15 +989,15 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={exportPDF}
-                    disabled={filteredAtts.length === 0}
-                    className="bg-brand-orange hover:bg-brand-orange-hover disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-xs font-semibold px-3 py-1.5 rounded transition flex items-center gap-1.5 cursor-pointer"
+                    className="bg-brand-orange hover:bg-brand-orange-hover active:scale-95 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-orange-500/20"
+                    title="Unduh rekap presensi dalam format PDF resmi Polinela"
                   >
                     <Download size={14} /> Unduh PDF
                   </button>
                   <button
                     onClick={exportExcel}
-                    disabled={filteredAtts.length === 0}
-                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-xs font-semibold px-3 py-1.5 rounded transition flex items-center gap-1.5 cursor-pointer"
+                    className="bg-green-600 hover:bg-green-700 active:scale-95 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-green-600/20"
+                    title="Unduh rekap presensi dalam format Excel (XLSX)"
                   >
                     <FileSpreadsheet size={14} /> Unduh Excel (XLSX)
                   </button>
@@ -1073,7 +1096,25 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
                   ))}
                   {filteredAtts.length === 0 && (
                     <tr>
-                      <td colSpan={isSingleDay ? 4 : 5} className="p-6 text-center text-gray-500">Belum ada presensi tercatat pada rentang filter ini.</td>
+                      <td colSpan={isSingleDay ? 4 : 5} className="p-8 text-center text-gray-400">
+                        <div className="flex flex-col items-center justify-center gap-1.5">
+                          <p className="font-semibold text-gray-300">Belum ada presensi tercatat pada rentang filter ini.</p>
+                          <p className="text-[11px] text-gray-500">
+                            {attendances.length > 0
+                              ? `Tersedia ${attendances.length} data presensi di riwayat lain.`
+                              : "Belum ada presensi sama sekali di database."}
+                          </p>
+                          {attendances.length > 0 && exportMode !== "all" && (
+                            <button
+                              type="button"
+                              onClick={() => setExportMode("all")}
+                              className="mt-2 text-xs font-bold text-brand-orange hover:text-white px-3 py-1.5 rounded-lg bg-brand-orange/15 border border-brand-orange/30 hover:bg-brand-orange transition cursor-pointer"
+                            >
+                              Tampilkan Semua Data Presensi ({attendances.length} Rekap)
+                            </button>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   )}
                 </tbody>
