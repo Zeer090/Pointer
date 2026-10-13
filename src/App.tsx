@@ -58,6 +58,7 @@ import {
 
 export default function App() {
   const [db, setDb] = useState<FullDatabase | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
       const saved = localStorage.getItem("pointer_user");
@@ -199,9 +200,15 @@ export default function App() {
   // Fetch & sync DB data (dengan polling 4 detik untuk Aktivitas & Log Sistem Himpunan real-time)
   const refreshDb = useCallback(() => {
     fetch(currentUser ? "/api/db" : "/api/public/db")
-      .then((r) => (r.ok ? r.json() : null))
+      .then(async (r) => {
+        if (!r.ok) {
+          throw new Error(`Server returned HTTP ${r.status}`);
+        }
+        return r.json();
+      })
       .then((data) => {
         if (data) {
+          setFetchError(null);
           setDb(data);
           // Jika sudah ada logged in user, refresh datanya dari DB server
           const savedUserStr = localStorage.getItem("pointer_user");
@@ -219,7 +226,10 @@ export default function App() {
           }
         }
       })
-      .catch((err) => console.error("Failed to fetch db:", err));
+      .catch((err) => {
+        console.error("Failed to fetch db:", err);
+        setFetchError("Gagal terhubung ke database backend (HTTP 500 / Koneksi terputus).");
+      });
   }, [currentUser]);
 
   useEffect(() => {
@@ -1110,12 +1120,35 @@ export default function App() {
   // Loading page fallback
   if (!db) {
     return (
-      <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center font-sans">
-        <div className="space-y-4 text-center">
-          <div className="w-12 h-12 border-4 border-brand-orange border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <div className="text-sm font-mono text-gray-500 uppercase tracking-widest uppercase">
-            Memuat POINTER SYSTEM...
-          </div>
+      <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center font-sans p-4">
+        <div className="max-w-md w-full bg-dark-card border border-dark-border p-6 rounded-2xl shadow-2xl text-center space-y-4">
+          {fetchError ? (
+            <>
+              <div className="w-12 h-12 bg-red-500/10 border border-red-500/30 text-red-500 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+                !
+              </div>
+              <h2 className="text-base font-bold text-white">Gagal Menghubungi Backend</h2>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Backend Vercel belum dapat terhubung ke database. Pastikan <b>Environment Variables</b> (seperti <code className="text-brand-orange">DATABASE_URL</code>) sudah dikonfigurasi di dashboard Vercel.
+              </p>
+              <button
+                onClick={() => {
+                  setFetchError(null);
+                  refreshDb();
+                }}
+                className="px-5 py-2.5 bg-brand-orange text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition shadow-lg shadow-orange-500/20"
+              >
+                Coba Hubungkan Ulang
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="w-12 h-12 border-4 border-brand-orange border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <div className="text-sm font-mono text-gray-500 uppercase tracking-widest">
+                Memuat POINTER SYSTEM...
+              </div>
+            </>
+          )}
         </div>
       </div>
     );

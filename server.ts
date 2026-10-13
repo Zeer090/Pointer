@@ -1263,8 +1263,9 @@ async function startServer() {
 // Export app for Vercel serverless
 export default app;
 
-// Only start the server when running directly (not on Vercel)
-if (process.env.VERCEL !== "1") {
+// Only start the server when running directly (not on Vercel serverless)
+const isVercel = Boolean(process.env.VERCEL) || Boolean(process.env.VERCEL_ENV) || Boolean(process.env.NOW_REGION);
+if (!isVercel) {
   startServer();
 }
 
