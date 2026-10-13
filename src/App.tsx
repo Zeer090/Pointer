@@ -90,6 +90,7 @@ export default function App() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAttendanceQrOpen, setIsAttendanceQrOpen] = useState(false);
   const [attendanceInitialEvent, setAttendanceInitialEvent] = useState("");
+  const [attendanceInitialSessionCode, setAttendanceInitialSessionCode] = useState("");
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean;
     title: string;
@@ -167,15 +168,17 @@ export default function App() {
     }
   }, [currentPage]);
 
-  // Handle #presensi hash from QR Code scans or direct links
+  // Handle #presensi or #absensi hash from QR Code scans or direct links
   useEffect(() => {
     const handleHash = () => {
       const hash = window.location.hash;
-      if (hash.startsWith("#presensi")) {
+      if (hash.startsWith("#presensi") || hash.startsWith("#absensi")) {
         const queryStr = hash.includes("?") ? hash.split("?")[1] : "";
         const params = new URLSearchParams(queryStr);
         const eventParam = params.get("event");
+        const codeParam = params.get("code");
         if (eventParam) setAttendanceInitialEvent(decodeURIComponent(eventParam));
+        if (codeParam) setAttendanceInitialSessionCode(decodeURIComponent(codeParam));
         setIsAttendanceQrOpen(true);
       }
     };
@@ -338,6 +341,16 @@ export default function App() {
           setLoginEmail("");
           setLoginPassword("");
           triggerToast(`Selamat datang, ${user.name}!`);
+
+          // Jika sedang mengisi presensi via QR scan, jangan redirect ke dashboard agar tidak terlempar
+          if (
+            isAttendanceQrOpen ||
+            window.location.hash.includes("presensi") ||
+            window.location.hash.includes("absensi")
+          ) {
+            return;
+          }
+
           // Gunakan db yang sudah ada untuk cari divisi (tidak perlu fetch lagi)
           if (user.role === "admin") {
             setCurrentPage("dashboard");
@@ -2100,12 +2113,17 @@ export default function App() {
                     Verifikasi kehadiran resmi untuk rapat pleno, workshop, dan agenda HIMA POINTER.
                   </p>
                 </div>
-                <button
-                  onClick={() => setIsAttendanceQrOpen(true)}
-                  className="px-4 py-2.5 rounded-xl bg-brand-orange hover:bg-brand-orange-hover text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-orange-500/20 shrink-0"
-                >
-                  <QrCode size={16} /> Buka Presensi Digital (QR Code)
-                </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => {
+                      setAttendanceInitialEvent("");
+                      setIsAttendanceQrOpen(true);
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-brand-orange hover:bg-brand-orange-hover text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-orange-500/20 shrink-0"
+                  >
+                    <QrCode size={16} /> Buat QR Code (Layar Proyektor)
+                  </button>
+                </div>
               </div>
 
               {/* CARD RINGKASAN */}
@@ -2596,11 +2614,33 @@ export default function App() {
       {/* GLOBAL ATTENDANCE QR MODAL */}
       <AttendanceQrModal
         isOpen={isAttendanceQrOpen}
-        onClose={() => setIsAttendanceQrOpen(false)}
+        onClose={() => {
+          setIsAttendanceQrOpen(false);
+          setAttendanceInitialEvent("");
+          setAttendanceInitialSessionCode("");
+          if (
+            window.location.hash.startsWith("#presensi") ||
+            window.location.hash.startsWith("#absensi")
+          ) {
+            window.history.replaceState(
+              null,
+              "",
+              window.location.pathname + window.location.search,
+            );
+          }
+        }}
         currentUser={currentUser}
         programsList={db?.programs || []}
         recentAttendances={db?.attendances || []}
         initialEventName={attendanceInitialEvent}
+        initialSessionCode={attendanceInitialSessionCode}
+        onLoginSuccess={(loggedInUser) => {
+          setCurrentUser(loggedInUser);
+          try {
+            localStorage.setItem("pointer_user", JSON.stringify(loggedInUser));
+          } catch {}
+          triggerToast(`Selamat datang, ${loggedInUser.name}!`);
+        }}
         onAttendanceSuccess={(newAtt) => {
           updateDb((prev) => ({
             ...prev,

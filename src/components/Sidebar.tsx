@@ -55,6 +55,12 @@ export default function Sidebar({
               icon: <BarChart2 size={16} />,
             },
             {
+              id: "presensi",
+              label: "QR Presensi",
+              icon: <QrCode size={16} />,
+              badge: "Scan/QR",
+            },
+            {
               id: "approval",
               label: "Approval Proker",
               icon: <CheckSquare size={16} />,
@@ -133,6 +139,12 @@ export default function Sidebar({
               id: "programs",
               label: "Program Kerja",
               icon: <Calendar size={16} />,
+            },
+            {
+              id: "presensi",
+              label: "QR Presensi",
+              icon: <QrCode size={16} />,
+              badge: "Scan/QR",
             },
           ],
         },
