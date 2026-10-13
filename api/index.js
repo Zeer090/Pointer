@@ -295,36 +295,73 @@ function checkActionPermission(action, userRole) {
   }
   return { allowed: false, reason: "Aksi tidak diizinkan untuk peran akun saat ini." };
 }
+function isIntentWithoutDetails(msg) {
+  const clean = msg.toLowerCase().replace(/[?!.,]/g, " ").replace(/\s+/g, " ").trim();
+  const aspirationIntentOnlyRegex = /^(saya\s+)?(mau|ingin|bisa|tolong|mohon)?\s*(ngajuin|mengajukan|kirim|menyampaikan|ajukan|bikin|tulis|buat)\s*(aspirasi|keluhan|saran|masukan|unek-unek|komplain)(\s+(dong|deh|ya|nih|min|kak|tolong|di\s+sini|lewat\s+sini))?$/i;
+  if (aspirationIntentOnlyRegex.test(clean)) return true;
+  const programIntentOnlyRegex = /^(saya\s+)?(mau|ingin|bisa|tolong|mohon)?\s*(buat|bikin|tambah|ajukan|buatkan)\s*(proker|program\s*kerja)(\s+baru)?(\s+(dong|deh|ya|nih|min|kak|tolong))?$/i;
+  if (programIntentOnlyRegex.test(clean)) return true;
+  const financeIntentOnlyRegex = /^(saya\s+)?(mau|ingin|bisa|tolong|mohon)?\s*(catat|simpan|tambah|input)\s*(kas|uang|pemasukan|pengeluaran)(\s+(masuk|keluar))?(\s+(dong|deh|ya|nih|min|kak|tolong))?$/i;
+  if (financeIntentOnlyRegex.test(clean)) return true;
+  const announcementIntentOnlyRegex = /^(saya\s+)?(mau|ingin|bisa|tolong|mohon)?\s*(buat|rilis|posting|bikin|terbitkan)\s*(pengumuman)(\s+baru)?(\s+(dong|deh|ya|nih|min|kak|tolong))?$/i;
+  if (announcementIntentOnlyRegex.test(clean)) return true;
+  const talentIntentOnlyRegex = /^(saya\s+)?(mau|ingin|bisa|tolong|mohon)?\s*(daftarkan|catat|daftar|input)\s*(prestasi|bakat)(\s+(dong|deh|ya|nih|min|kak|tolong))?$/i;
+  if (talentIntentOnlyRegex.test(clean)) return true;
+  return false;
+}
 async function parseActionIntent(message, genAI2, liveDb) {
   const lowerMsg = message.toLowerCase();
   if ((lowerMsg.includes("hapus") || lowerMsg.includes("delete") || lowerMsg.includes("drop") || lowerMsg.includes("reset")) && (lowerMsg.includes("user") || lowerMsg.includes("akun") || lowerMsg.includes("database") || lowerMsg.includes("sistem") || lowerMsg.includes("semua"))) {
     return { type: "BLOCKED_DESTRUCTIVE", data: {} };
   }
-  if ((lowerMsg.includes("aspirasi") || lowerMsg.includes("keluhan") || lowerMsg.includes("saran")) && (lowerMsg.includes("ngajuin") || lowerMsg.includes("kirim") || lowerMsg.includes("ajukan") || lowerMsg.includes("mau") || lowerMsg.includes("tentang") || lowerMsg.includes(":")) && !lowerMsg.includes("bagaimana cara") && !lowerMsg.includes("apa saja") && !lowerMsg.includes("status aspirasi") && !lowerMsg.includes("sebutkan")) {
+  if (isIntentWithoutDetails(message)) {
+    return { type: "NONE", data: {} };
+  }
+  if ((lowerMsg.includes("aspirasi") || lowerMsg.includes("keluhan") || lowerMsg.includes("saran") || lowerMsg.includes("masukan")) && (lowerMsg.includes("ngajuin") || lowerMsg.includes("kirim") || lowerMsg.includes("ajukan") || lowerMsg.includes("mau") || lowerMsg.includes("tentang") || lowerMsg.includes(":")) && !lowerMsg.includes("bagaimana cara") && !lowerMsg.includes("apa saja") && !lowerMsg.includes("status aspirasi") && !lowerMsg.includes("sebutkan")) {
     let cat = "Lainnya";
     if (lowerMsg.includes("akademik") || lowerMsg.includes("kuliah") || lowerMsg.includes("dosen") || lowerMsg.includes("belajar") || lowerMsg.includes("kurikulum")) cat = "Akademik";
     else if (lowerMsg.includes("fasilitas") || lowerMsg.includes("wifi") || lowerMsg.includes("ac") || lowerMsg.includes("lab") || lowerMsg.includes("ruang") || lowerMsg.includes("kursi")) cat = "Fasilitas";
     else if (lowerMsg.includes("beasiswa") || lowerMsg.includes("kip") || lowerMsg.includes("ukt")) cat = "Beasiswa";
     else if (lowerMsg.includes("kegiatan") || lowerMsg.includes("acara") || lowerMsg.includes("lomba")) cat = "Kegiatan";
-    let msgText = message;
-    for (const token of [":", "tentang", "mengenai", "bahwa"]) {
-      const idx = msgText.toLowerCase().indexOf(token);
-      if (idx !== -1 && idx + token.length < msgText.length - 3) {
-        msgText = msgText.substring(idx + token.length).trim();
+    let msgText = "";
+    for (const token of [":", "tentang", "mengenai", "bahwa", "yaitu", "karena"]) {
+      const idx = message.toLowerCase().indexOf(token);
+      if (idx !== -1 && idx + token.length < message.length) {
+        msgText = message.substring(idx + token.length).trim();
         msgText = msgText.replace(/^(akademik|fasilitas|beasiswa|kegiatan|lainnya)[,:\s-]+/i, "").trim();
         break;
       }
     }
-    if (!msgText || msgText.length < 3) msgText = message;
-    return { type: "CREATE_ASPIRATION", data: { student_name: "Mahasiswa", category: cat, message: msgText } };
+    if (!msgText) {
+      const stripped = message.replace(/^(halo\s+)?(saya\s+)?(mau|ingin|bisa|tolong)?\s*(ngajuin|mengajukan|kirim|ajukan)\s*(aspirasi|keluhan|saran|masukan)[:\s-]*/i, "").trim();
+      if (stripped.length >= 15 && !isIntentWithoutDetails(stripped)) {
+        msgText = stripped;
+      }
+    }
+    if (!msgText || msgText.length < 12 || isIntentWithoutDetails(msgText)) {
+      return { type: "NONE", data: {} };
+    }
+    return { type: "CREATE_ASPIRATION", data: { student_name: "", category: cat, message: msgText } };
   }
   if ((lowerMsg.includes("proker") || lowerMsg.includes("program kerja")) && (lowerMsg.includes("buat") || lowerMsg.includes("tambah") || lowerMsg.includes("bikin"))) {
     const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    const afterColon = message.indexOf(":");
+    let title = "";
+    let desc = message;
+    if (afterColon !== -1) {
+      title = message.substring(afterColon + 1).split(",")[0].trim();
+      desc = message.substring(afterColon + 1).trim();
+    } else {
+      title = message.replace(/^(buat|tambah|bikin)\s+(proker|program\s*kerja)[:\s-]*/i, "").trim();
+    }
+    if (!title || title.length < 5 || title.toLowerCase() === "baru" || title.toLowerCase() === "dong") {
+      return { type: "NONE", data: {} };
+    }
     return {
       type: "CREATE_PROGRAM",
       data: {
-        title: message.replace(/^(buat|tambah|bikin)\s+(proker|program\s*kerja)[:\s-]*/i, "").trim() || "Program Kerja Baru",
-        description: message,
+        title,
+        description: desc,
         event_date: today,
         division_id: "div-psdam",
         created_by: "Pengurus"
@@ -335,6 +372,9 @@ async function parseActionIntent(message, genAI2, liveDb) {
     const isIncome = lowerMsg.includes("masuk") || lowerMsg.includes("pemasukan") || lowerMsg.includes("iuran");
     const numMatch = message.replace(/[.,]/g, "").match(/\d+/);
     const amount = numMatch ? parseInt(numMatch[0], 10) : 0;
+    if (amount <= 0) {
+      return { type: "NONE", data: {} };
+    }
     return {
       type: "CREATE_FINANCIAL",
       data: {
@@ -347,7 +387,10 @@ async function parseActionIntent(message, genAI2, liveDb) {
   }
   if (lowerMsg.includes("buat pengumuman") || lowerMsg.includes("rilis pengumuman") || lowerMsg.includes("posting pengumuman")) {
     const afterColon = message.indexOf(":");
-    const content = afterColon !== -1 ? message.substring(afterColon + 1).trim() : message;
+    const content = afterColon !== -1 ? message.substring(afterColon + 1).trim() : "";
+    if (!content || content.length < 15) {
+      return { type: "NONE", data: {} };
+    }
     return {
       type: "CREATE_ANNOUNCEMENT",
       data: {
@@ -358,11 +401,15 @@ async function parseActionIntent(message, genAI2, liveDb) {
     };
   }
   if (lowerMsg.includes("daftarkan prestasi") || lowerMsg.includes("catat bakat") || lowerMsg.includes("daftar bakat")) {
+    const talentText = message.replace(/^(daftarkan prestasi|catat bakat|daftar bakat)[:\s-]*/i, "").trim();
+    if (!talentText || talentText.length < 5 || talentText.toLowerCase() === "dong") {
+      return { type: "NONE", data: {} };
+    }
     return {
       type: "CREATE_TALENT",
       data: {
-        student_name: "Mahasiswa",
-        talent: message.replace(/^(daftarkan prestasi|catat bakat|daftar bakat)[:\s-]*/i, "").trim() || "Bakat Umum",
+        student_name: "",
+        talent: talentText,
         achievement: "Peserta"
       }
     };
@@ -415,11 +462,12 @@ atau jika hanya ngobrol/tanya:
 }
 async function executeAction(action, prisma2, userName) {
   const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+  const accountName = userName && userName.trim() && userName !== "Mahasiswa" && userName !== "Anonim" ? userName.trim() : action.data?.student_name && action.data.student_name !== "Mahasiswa" && action.data.student_name !== "Anonim" ? action.data.student_name : userName?.trim() || "Pengguna";
   switch (action.type) {
     case "CREATE_ASPIRATION": {
       const record = await prisma2.aspiration.create({
         data: {
-          student_name: action.data.student_name || userName || "Anonim",
+          student_name: accountName,
           category: action.data.category || "Lainnya",
           message: action.data.message,
           status: "pending",
@@ -445,12 +493,12 @@ async function executeAction(action, prisma2, userName) {
           status: "planning",
           approval_status: "pending",
           division_id: divisionId,
-          created_by: action.data.created_by || userName || "Pengurus"
+          created_by: accountName
         }
       });
       await prisma2.activityLog.create({
         data: {
-          detail: `Program kerja baru diajukan: '${record.title}'`,
+          detail: `Program kerja baru diajukan oleh ${accountName}: '${record.title}'`,
           time: "Baru saja",
           color: "green"
         }
@@ -468,7 +516,7 @@ async function executeAction(action, prisma2, userName) {
       });
       await prisma2.activityLog.create({
         data: {
-          detail: `Pengumuman resmi diterbitkan: '${record.title}'`,
+          detail: `Pengumuman resmi diterbitkan oleh ${accountName}: '${record.title}'`,
           time: "Baru saja",
           color: "blue"
         }
@@ -491,7 +539,7 @@ async function executeAction(action, prisma2, userName) {
       });
       await prisma2.activityLog.create({
         data: {
-          detail: `Kas ${type === "income" ? "masuk" : "keluar"} dicatat: '${record.title}'`,
+          detail: `Kas ${type === "income" ? "masuk" : "keluar"} dicatat oleh ${accountName}: '${record.title}'`,
           time: "Baru saja",
           color: type === "income" ? "green" : "red"
         }
@@ -501,7 +549,7 @@ async function executeAction(action, prisma2, userName) {
     case "CREATE_TALENT": {
       const record = await prisma2.talent.create({
         data: {
-          student_name: action.data.student_name || userName || "Mahasiswa",
+          student_name: accountName,
           talent: action.data.talent,
           achievement: action.data.achievement || "Peserta Perlombaan",
           certificate: "Sertifikat.pdf"
@@ -590,6 +638,20 @@ Ada yang bisa saya bantu hari ini? Kamu bisa tanya seputar kegiatan himpunan, in
 Saya di sini untuk membantu rekan-rekan mahasiswa dan pengurus dalam mendapatkan informasi kegiatan, kepengurusan, layanan aspirasi, toko merchandise, hingga membantu alur kerja di website ini. Silakan tanya apa saja ya! \u{1F60A}`;
   }
   if (q.includes("aspirasi") || q.includes("advokasi") || q.includes("keluhan") || q.includes("saran") || q.includes("kritik")) {
+    if (isIntentWithoutDetails(message) || q.includes("mau") || q.includes("ngajuin") || q.includes("kirim") || q.includes("ajukan") || q.includes("cara")) {
+      return `### \u{1F4A1} Layanan Pengajuan Aspirasi Mahasiswa POINTER
+
+Halo! \u{1F44B} Tentu saja, kamu bisa menyampaikan aspirasi, masukan, keluhan fasilitas, atau saran perkuliahan langsung melalui saya.
+
+Agar aspirasimu dapat dicatat dan ditindaklanjuti secara resmi oleh pengurus Divisi PSDAM, silakan tuliskan pesan dengan rincian:
+\u2022 **Kategori:** (Akademik / Fasilitas / Beasiswa / Kegiatan / Lainnya)
+\u2022 **Isi Aspirasi:** (Jelaskan rincian keluhan, kritik, atau saran perbaikan kamu)
+
+*Contoh format pengiriman langsung:*
+> *"Saya mau mengajukan aspirasi fasilitas: Stopkontak di lab komputer 2 banyak yang rusak, mohon segera diganti."*
+
+Silakan ketik aspirasimu sekarang ya! \u{1F60A}`;
+    }
     const list = db.aspirations.length > 0 ? db.aspirations.slice(0, 5).map((a) => {
       const badge = a.status === "completed" ? "\u{1F7E2} Selesai" : a.status === "processing" ? "\u{1F535} Diproses" : "\u{1F7E1} Pending";
       return `\u2022 [${badge}] *${a.category}*: "${a.message}" (${a.student_name})`;
@@ -715,27 +777,29 @@ function classifyMessage(msg) {
     /^(makasih|terima kasih|thanks|thank you|ok|oke|sip|mantap|keren)\b/
   ];
   if (q.length < 35 && chitchatPatterns.some((re) => re.test(q))) return "chit-chat";
-  const actionKeywords = [
-    "ngajuin aspirasi",
-    "kirim aspirasi",
-    "ajukan aspirasi",
-    "mau aspirasi",
-    "buat proker",
-    "tambah proker",
-    "bikin proker",
-    "catat kas",
-    "simpan kas",
-    "catat pemasukan",
-    "catat pengeluaran",
-    "buat pengumuman",
-    "rilis pengumuman",
-    "daftarkan prestasi",
-    "catat bakat",
-    "hapus",
-    "delete",
-    "drop"
-  ];
-  if (actionKeywords.some((kw) => q.includes(kw))) return "action";
+  if (!isIntentWithoutDetails(msg)) {
+    const actionKeywords = [
+      "ngajuin aspirasi",
+      "kirim aspirasi",
+      "ajukan aspirasi",
+      "mau aspirasi",
+      "buat proker",
+      "tambah proker",
+      "bikin proker",
+      "catat kas",
+      "simpan kas",
+      "catat pemasukan",
+      "catat pengeluaran",
+      "buat pengumuman",
+      "rilis pengumuman",
+      "daftarkan prestasi",
+      "catat bakat",
+      "hapus",
+      "delete",
+      "drop"
+    ];
+    if (actionKeywords.some((kw) => q.includes(kw))) return "action";
+  }
   const simpleInfoKeywords = [
     "proker",
     "program kerja",
@@ -1245,7 +1309,7 @@ app.post("/api/auth/login", async (req, res) => {
       });
     }
     const token = jwt.sign(
-      { id: user.id, role: user.role, division_id: user.division_id },
+      { id: user.id, name: user.name, role: user.role, division_id: user.division_id },
       JWT_SECRET,
       { expiresIn: "8h" }
     );
@@ -1307,6 +1371,8 @@ app.post(
         created_by,
         status
       } = req.body;
+      const authUser = req.user;
+      const creatorName = authUser?.name || created_by || "Pengurus";
       const newProgram = await prisma.program.create({
         data: {
           title,
@@ -1315,7 +1381,7 @@ app.post(
           status: status || "planning",
           approval_status: "pending",
           division_id,
-          created_by: created_by || "Anggota"
+          created_by: creatorName
         }
       });
       let divName = division_id;
@@ -1405,10 +1471,12 @@ app.delete(
 );
 app.post("/api/aspirations", authenticate, async (req, res) => {
   try {
+    const authUser = req.user;
     const { student_name, category, message } = req.body;
+    const finalStudentName = authUser?.name || student_name || "Pengguna";
     const newAsp = await prisma.aspiration.create({
       data: {
-        student_name: student_name || "Mahasiswa Umum",
+        student_name: finalStudentName,
         category: category || "Umum",
         message,
         status: "pending",
@@ -1467,10 +1535,12 @@ app.post(
   authorize("admin", "divisi"),
   async (req, res) => {
     try {
+      const authUser = req.user;
       const { student_name, talent, achievement, certificate } = req.body;
+      const finalStudentName = authUser?.name || student_name || "Pengguna";
       const newTalent = await prisma.talent.create({
         data: {
-          student_name,
+          student_name: finalStudentName,
           talent,
           achievement: achievement || "Peserta Perlombaan",
           certificate: certificate || "Sertifikat_Internal.pdf"
@@ -1721,12 +1791,14 @@ app.post(
   authorize("admin", "divisi"),
   async (req, res) => {
     try {
+      const authUser = req.user;
       const { title, summary, author } = req.body;
+      const authorName = authUser?.name || author || "Sekretaris";
       const newNot = await prisma.notulensi.create({
         data: {
           title,
           date: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
-          author: author || "Sekretaris",
+          author: authorName,
           summary
         }
       });
@@ -1835,14 +1907,16 @@ app.post(
   authorize("admin", "divisi"),
   async (req, res) => {
     try {
+      const authUser = req.user;
       const { num, subject, type, date, handler, file_name } = req.body;
+      const handlerName = authUser?.name || handler || "Sekretariat";
       const newLetter = await prisma.letter.create({
         data: {
           num,
           subject,
           type: type || "Masuk",
           date: date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
-          handler,
+          handler: handlerName,
           file_name
         }
       });
@@ -1943,8 +2017,26 @@ app.post("/api/ai/chat", async (req, res) => {
     if (!message?.trim()) {
       return res.status(400).json({ error: "Pesan tidak boleh kosong." });
     }
+    const token = readCookie(req, AUTH_COOKIE) || req.headers.authorization?.replace(/^Bearer\s+/, "");
+    let tokenUser = null;
+    if (token) {
+      try {
+        tokenUser = jwt.verify(token, JWT_SECRET);
+      } catch {
+      }
+    }
+    const effectiveName = tokenUser?.name || (typeof context?.user === "object" ? context.user.name : null) || (typeof context?.user === "string" ? context.user : "Pengguna");
+    const effectiveRole = tokenUser?.role || (typeof context?.user === "object" ? context.user.role : null) || "mahasiswa";
+    const effectiveContext = {
+      ...context,
+      user: {
+        name: effectiveName,
+        role: effectiveRole,
+        division_id: tokenUser?.division_id || (typeof context?.user === "object" ? context.user.division_id : null)
+      }
+    };
     const ai = getGenAI();
-    const result = await processAiChat(prisma, ai, message, history, context);
+    const result = await processAiChat(prisma, ai, message, history, effectiveContext);
     res.json({
       success: true,
       reply: result.reply,

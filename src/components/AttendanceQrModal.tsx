@@ -239,14 +239,17 @@ export default function AttendanceQrModal({
     const d = new Date();
     const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
+    const finalParticipantName = currentUser?.name || studentName.trim();
+    const finalParticipantNpm = currentUser?.npm || studentNpm.trim() || `2478${Math.floor(Math.random() * 900 + 100)}`;
+
     try {
       const res = await fetch("/api/attendances/self-checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           event_name: checkinEvent || activeEventTitle,
-          participant_name: studentName.trim(),
-          npm: studentNpm.trim() || `2478${Math.floor(Math.random() * 900 + 100)}`,
+          participant_name: finalParticipantName,
+          npm: finalParticipantNpm,
           status,
           date: localDate,
         }),
@@ -832,9 +835,13 @@ export default function AttendanceQrModal({
                     </label>
                     <input
                       type="text"
-                      value={studentName}
+                      value={currentUser?.name || studentName}
+                      disabled={Boolean(currentUser?.name)}
+                      readOnly={Boolean(currentUser?.name)}
                       onChange={(e) => setStudentName(e.target.value)}
-                      className="w-full bg-[#151921] border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-brand-orange font-medium"
+                      className={`w-full bg-[#151921] border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-brand-orange font-medium ${
+                        currentUser?.name ? "cursor-not-allowed opacity-90 text-brand-orange select-none" : ""
+                      }`}
                       required
                     />
                   </div>

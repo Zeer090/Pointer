@@ -141,7 +141,7 @@ Email : mi@polinela.ac.id
   const handleAspSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!aspMessage) return;
-    const authorName = aspName.trim() || currentUser?.name || "Anonim";
+    const authorName = currentUser?.name || "Pengguna";
     onSubmitAspiration(authorName, aspCategory, aspMessage);
     setAspName("");
     setAspMessage("");
@@ -193,17 +193,17 @@ Email : mi@polinela.ac.id
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-[10px] font-mono uppercase text-gray-400 tracking-wider block mb-1.5 font-bold">
-                  Nama Mahasiswa
+                  Nama Akun Pengaju
                 </label>
                 <input
                   type="text"
-                  placeholder={currentUser?.name || "Nama Lengkap (atau kosongkan untuk Anonim)"}
-                  className="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-brand-orange transition"
-                  value={aspName}
-                  onChange={(e) => setAspName(e.target.value)}
+                  disabled
+                  readOnly
+                  className="w-full bg-dark-bg/60 border border-dark-border rounded-xl px-4 py-3 text-xs text-brand-orange font-semibold cursor-not-allowed select-none"
+                  value={currentUser?.name || "Akun Mahasiswa"}
                 />
                 <span className="text-[10px] text-gray-500 mt-1 block">
-                  * Biarkan kosong untuk mengirim secara Anonim
+                  * Otomatis menggunakan nama dari akun login Anda ({currentUser?.npm ? `NPM: ${currentUser.npm}` : currentUser?.email || "Terverifikasi"})
                 </span>
               </div>
 
@@ -386,10 +386,10 @@ Email : mi@polinela.ac.id
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="text"
-                placeholder="Nama (Bisa kosong)"
-                className="bg-dark-bg border border-dark-border rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange"
-                value={aspName}
-                onChange={(e) => setAspName(e.target.value)}
+                disabled
+                readOnly
+                className="bg-dark-bg/60 border border-dark-border rounded px-3 py-2 text-xs text-brand-orange font-semibold cursor-not-allowed select-none"
+                value={currentUser?.name || "Akun Pengurus"}
               />
               <select
                 className="bg-dark-bg border border-dark-border rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange"

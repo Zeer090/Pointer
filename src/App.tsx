@@ -561,11 +561,12 @@ export default function App() {
   // Aspirasi
   const handleAddAspiration = useCallback(
     async (name: string, category: string, message: string) => {
+      const authorName = currentUser?.name || name || "Pengguna";
       try {
         const res = await fetch("/api/aspirations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ student_name: name, category, message }),
+          body: JSON.stringify({ student_name: authorName, category, message }),
         });
         if (res.ok) {
           const ret = await res.json();
@@ -574,7 +575,7 @@ export default function App() {
             aspirations: [
               ret.aspiration ?? {
                 id: Date.now().toString(),
-                student_name: name,
+                student_name: authorName,
                 category,
                 message,
                 status: "pending",
@@ -589,7 +590,7 @@ export default function App() {
         console.error("Add aspiration failed");
       }
     },
-    [updateDb, triggerToast],
+    [currentUser, updateDb, triggerToast],
   );
 
   const handleUpdateAspirationStatus = useCallback(
@@ -647,12 +648,13 @@ export default function App() {
       achievement: string,
       certificate: string,
     ) => {
+      const authorName = currentUser?.name || studentName || "Pengguna";
       try {
         const res = await fetch("/api/talents", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            student_name: studentName,
+            student_name: authorName,
             talent,
             achievement,
             certificate,
@@ -665,7 +667,7 @@ export default function App() {
             talents: [
               ret.talent ?? {
                 id: Date.now().toString(),
-                student_name: studentName,
+                student_name: authorName,
                 talent,
                 achievement,
                 certificate,
@@ -679,7 +681,7 @@ export default function App() {
         console.error("Add talent failed");
       }
     },
-    [updateDb, triggerToast],
+    [currentUser, updateDb, triggerToast],
   );
 
   // KIMAS Checkout
@@ -699,7 +701,7 @@ export default function App() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             user_id: currentUser?.id,
-            student_name: identity?.nama || currentUser?.name || "Mahasiswa",
+            student_name: currentUser?.name || identity?.nama || "Pengguna",
             kelas: identity?.kelas,
             no_hp: identity?.noHp,
             tempat_tinggal: identity?.tempatTinggal,

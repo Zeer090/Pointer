@@ -46,6 +46,7 @@ const AUTH_COOKIE = "pointer_auth";
 
 type AuthUser = {
   id: string;
+  name: string;
   role: string;
   division_id: string | null;
 };
@@ -312,7 +313,7 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, role: user.role, division_id: user.division_id },
+      { id: user.id, name: user.name, role: user.role, division_id: user.division_id },
       JWT_SECRET,
       { expiresIn: "8h" },
     );
@@ -383,6 +384,9 @@ app.post(
         status,
       } = req.body;
 
+      const authUser = (req as AuthenticatedRequest).user;
+      const creatorName = authUser?.name || created_by || "Pengurus";
+
       const newProgram = await prisma.program.create({
         data: {
           title,
@@ -391,7 +395,7 @@ app.post(
           status: status || "planning",
           approval_status: "pending",
           division_id,
-          created_by: created_by || "Anggota",
+          created_by: creatorName,
         },
       });
 
@@ -500,10 +504,13 @@ app.delete(
 // Submit/process Aspirations
 app.post("/api/aspirations", authenticate, async (req, res) => {
   try {
+    const authUser = (req as AuthenticatedRequest).user;
     const { student_name, category, message } = req.body;
+    const finalStudentName = authUser?.name || student_name || "Pengguna";
+
     const newAsp = await prisma.aspiration.create({
       data: {
-        student_name: student_name || "Mahasiswa Umum",
+        student_name: finalStudentName,
         category: category || "Umum",
         message,
         status: "pending",
@@ -569,10 +576,12 @@ app.post(
   authorize("admin", "divisi"),
   async (req, res) => {
     try {
+      const authUser = (req as AuthenticatedRequest).user;
       const { student_name, talent, achievement, certificate } = req.body;
+      const finalStudentName = authUser?.name || student_name || "Pengguna";
       const newTalent = await prisma.talent.create({
         data: {
-          student_name,
+          student_name: finalStudentName,
           talent,
           achievement: achievement || "Peserta Perlombaan",
           certificate: certificate || "Sertifikat_Internal.pdf",
@@ -869,13 +878,15 @@ app.post(
   authorize("admin", "divisi"),
   async (req, res) => {
     try {
+      const authUser = (req as AuthenticatedRequest).user;
       const { title, summary, author } = req.body;
+      const authorName = authUser?.name || author || "Sekretaris";
 
       const newNot = await prisma.notulensi.create({
         data: {
           title,
           date: new Date().toISOString().split("T")[0],
-          author: author || "Sekretaris",
+          author: authorName,
           summary,
         },
       });
@@ -1002,7 +1013,9 @@ app.post(
   authorize("admin", "divisi"),
   async (req, res) => {
     try {
+      const authUser = (req as AuthenticatedRequest).user;
       const { num, subject, type, date, handler, file_name } = req.body;
+      const handlerName = authUser?.name || handler || "Sekretariat";
 
       const newLetter = await prisma.letter.create({
         data: {
@@ -1010,7 +1023,7 @@ app.post(
           subject,
           type: type || "Masuk",
           date: date || new Date().toISOString().split("T")[0],
-          handler,
+          handler: handlerName,
           file_name,
         },
       });
@@ -1132,8 +1145,29 @@ app.post("/api/ai/chat", async (req, res) => {
       return res.status(400).json({ error: "Pesan tidak boleh kosong." });
     }
 
+    // Ambil akun login dari cookie atau authorization header jika tersedia
+    const token = readCookie(req, AUTH_COOKIE) || req.headers.authorization?.replace(/^Bearer\s+/, "");
+    let tokenUser: AuthUser | null = null;
+    if (token) {
+      try {
+        tokenUser = jwt.verify(token, JWT_SECRET) as AuthUser;
+      } catch {}
+    }
+
+    const effectiveName = tokenUser?.name || (typeof context?.user === "object" ? context.user.name : null) || (typeof context?.user === "string" ? context.user : "Pengguna");
+    const effectiveRole = tokenUser?.role || (typeof context?.user === "object" ? context.user.role : null) || "mahasiswa";
+
+    const effectiveContext = {
+      ...context,
+      user: {
+        name: effectiveName,
+        role: effectiveRole,
+        division_id: tokenUser?.division_id || (typeof context?.user === "object" ? context.user.division_id : null),
+      },
+    };
+
     const ai = getGenAI();
-    const result = await processAiChat(prisma, ai, message, history, context);
+    const result = await processAiChat(prisma, ai, message, history, effectiveContext);
     res.json({
       success: true,
       reply: result.reply,

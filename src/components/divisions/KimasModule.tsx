@@ -36,7 +36,7 @@ export default function KimasModule({
 
   // Identity form state (step sebelum QRIS)
   const [showIdentityForm, setShowIdentityForm] = useState(false);
-  const [identityNama, setIdentityNama] = useState("");
+  const [identityNama, setIdentityNama] = useState(currentUser?.name || "");
   const [identityKelas, setIdentityKelas] = useState("");
   const [identityNoHp, setIdentityNoHp] = useState("");
   const [identityTempat, setIdentityTempat] = useState("");
@@ -130,8 +130,9 @@ export default function KimasModule({
       id: item.product.id,
       quantity: item.quantity
     }));
+    const buyerName = currentUser?.name || identityNama.trim();
     const identity: BuyerIdentity = {
-      nama: identityNama,
+      nama: buyerName,
       kelas: identityKelas,
       noHp: identityNoHp,
       tempatTinggal: identityTempat,
@@ -140,7 +141,7 @@ export default function KimasModule({
     setCart([]);
     setSuccessPaid(true);
     // Reset identity form
-    setIdentityNama("");
+    setIdentityNama(currentUser?.name || "");
     setIdentityKelas("");
     setIdentityNoHp("");
     setIdentityTempat("");
@@ -151,7 +152,8 @@ export default function KimasModule({
 
   const handleIdentitySubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!identityNama.trim() || !identityKelas.trim() || !identityNoHp.trim() || !identityTempat.trim()) {
+    const buyerName = currentUser?.name || identityNama.trim();
+    if (!buyerName || !identityKelas.trim() || !identityNoHp.trim() || !identityTempat.trim()) {
       setIdentityError("Semua field identitas wajib diisi!");
       return;
     }
@@ -384,9 +386,13 @@ export default function KimasModule({
                         <input
                           type="text"
                           placeholder="cth. Andi Prasetyo"
-                          value={identityNama}
+                          value={currentUser?.name || identityNama}
+                          disabled={Boolean(currentUser?.name)}
+                          readOnly={Boolean(currentUser?.name)}
                           onChange={(e) => { setIdentityNama(e.target.value); setIdentityError(""); }}
-                          className="w-full bg-dark-bg border border-dark-border rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange transition"
+                          className={`w-full bg-dark-bg border border-dark-border rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange transition ${
+                            currentUser?.name ? "cursor-not-allowed opacity-90 text-brand-orange select-none font-semibold" : ""
+                          }`}
                           required
                         />
                       </div>

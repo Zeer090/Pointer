@@ -382,6 +382,42 @@ export function checkActionPermission(action: AgentAction, userRole?: string): P
   return { allowed: false, reason: "Aksi tidak diizinkan untuk peran akun saat ini." };
 }
 
+/**
+ * Deteksi apakah pesan pengguna hanya menyatakan niat/keinginan untuk membuat/mengajukan sesuatu,
+ * TETAPI belum menyertakan isi, deskripsi masalah, atau detail tindakan yang sebenarnya.
+ * Jika true, sistem TIDAK BOLEH langsung mengeksekusi mutasi ke database!
+ */
+export function isIntentWithoutDetails(msg: string): boolean {
+  const clean = msg.toLowerCase().replace(/[?!.,]/g, " ").replace(/\s+/g, " ").trim();
+
+  // Pola 1: Niat mengajukan aspirasi/keluhan tanpa isi masalah
+  const aspirationIntentOnlyRegex =
+    /^(saya\s+)?(mau|ingin|bisa|tolong|mohon)?\s*(ngajuin|mengajukan|kirim|menyampaikan|ajukan|bikin|tulis|buat)\s*(aspirasi|keluhan|saran|masukan|unek-unek|komplain)(\s+(dong|deh|ya|nih|min|kak|tolong|di\s+sini|lewat\s+sini))?$/i;
+  if (aspirationIntentOnlyRegex.test(clean)) return true;
+
+  // Pola 2: Niat membuat proker tanpa nama/detail agenda
+  const programIntentOnlyRegex =
+    /^(saya\s+)?(mau|ingin|bisa|tolong|mohon)?\s*(buat|bikin|tambah|ajukan|buatkan)\s*(proker|program\s*kerja)(\s+baru)?(\s+(dong|deh|ya|nih|min|kak|tolong))?$/i;
+  if (programIntentOnlyRegex.test(clean)) return true;
+
+  // Pola 3: Niat mencatat kas tanpa keterangan / nominal
+  const financeIntentOnlyRegex =
+    /^(saya\s+)?(mau|ingin|bisa|tolong|mohon)?\s*(catat|simpan|tambah|input)\s*(kas|uang|pemasukan|pengeluaran)(\s+(masuk|keluar))?(\s+(dong|deh|ya|nih|min|kak|tolong))?$/i;
+  if (financeIntentOnlyRegex.test(clean)) return true;
+
+  // Pola 4: Niat membuat pengumuman tanpa isi pengumuman
+  const announcementIntentOnlyRegex =
+    /^(saya\s+)?(mau|ingin|bisa|tolong|mohon)?\s*(buat|rilis|posting|bikin|terbitkan)\s*(pengumuman)(\s+baru)?(\s+(dong|deh|ya|nih|min|kak|tolong))?$/i;
+  if (announcementIntentOnlyRegex.test(clean)) return true;
+
+  // Pola 5: Niat mendaftarkan prestasi tanpa detail prestasi
+  const talentIntentOnlyRegex =
+    /^(saya\s+)?(mau|ingin|bisa|tolong|mohon)?\s*(daftarkan|catat|daftar|input)\s*(prestasi|bakat)(\s+(dong|deh|ya|nih|min|kak|tolong))?$/i;
+  if (talentIntentOnlyRegex.test(clean)) return true;
+
+  return false;
+}
+
 async function parseActionIntent(
   message: string,
   genAI: GoogleGenAI,
@@ -403,9 +439,14 @@ async function parseActionIntent(
     return { type: "BLOCKED_DESTRUCTIVE", data: {} };
   }
 
-  // Aspirasi — pola sangat umum, tangani secara instan
+  // Jika pesan hanya menyatakan niat/keinginan tanpa rincian, JANGAN eksekusi ke database!
+  if (isIntentWithoutDetails(message)) {
+    return { type: "NONE", data: {} };
+  }
+
+  // Aspirasi — pola umum, tangani hanya jika benar-benar ada isi pesan nyata
   if (
-    (lowerMsg.includes("aspirasi") || lowerMsg.includes("keluhan") || lowerMsg.includes("saran")) &&
+    (lowerMsg.includes("aspirasi") || lowerMsg.includes("keluhan") || lowerMsg.includes("saran") || lowerMsg.includes("masukan")) &&
     (lowerMsg.includes("ngajuin") || lowerMsg.includes("kirim") || lowerMsg.includes("ajukan") ||
       lowerMsg.includes("mau") || lowerMsg.includes("tentang") || lowerMsg.includes(":")) &&
     !lowerMsg.includes("bagaimana cara") &&
@@ -419,30 +460,57 @@ async function parseActionIntent(
     else if (lowerMsg.includes("beasiswa") || lowerMsg.includes("kip") || lowerMsg.includes("ukt")) cat = "Beasiswa";
     else if (lowerMsg.includes("kegiatan") || lowerMsg.includes("acara") || lowerMsg.includes("lomba")) cat = "Kegiatan";
 
-    let msgText = message;
-    for (const token of [":", "tentang", "mengenai", "bahwa"]) {
-      const idx = msgText.toLowerCase().indexOf(token);
-      if (idx !== -1 && idx + token.length < msgText.length - 3) {
-        msgText = msgText.substring(idx + token.length).trim();
+    let msgText = "";
+    for (const token of [":", "tentang", "mengenai", "bahwa", "yaitu", "karena"]) {
+      const idx = message.toLowerCase().indexOf(token);
+      if (idx !== -1 && idx + token.length < message.length) {
+        msgText = message.substring(idx + token.length).trim();
         msgText = msgText.replace(/^(akademik|fasilitas|beasiswa|kegiatan|lainnya)[,:\s-]+/i, "").trim();
         break;
       }
     }
-    if (!msgText || msgText.length < 3) msgText = message;
-    return { type: "CREATE_ASPIRATION", data: { student_name: "Mahasiswa", category: cat, message: msgText } };
+
+    if (!msgText) {
+      // Hilangkan awalan umum jika ada
+      const stripped = message.replace(/^(halo\s+)?(saya\s+)?(mau|ingin|bisa|tolong)?\s*(ngajuin|mengajukan|kirim|ajukan)\s*(aspirasi|keluhan|saran|masukan)[:\s-]*/i, "").trim();
+      if (stripped.length >= 15 && !isIntentWithoutDetails(stripped)) {
+        msgText = stripped;
+      }
+    }
+
+    // Validasi ketat: jika isi aspirasi kosong, terlalu pendek (< 12 karakter), atau hanya menyatakan niat
+    if (!msgText || msgText.length < 12 || isIntentWithoutDetails(msgText)) {
+      return { type: "NONE", data: {} };
+    }
+
+    return { type: "CREATE_ASPIRATION", data: { student_name: "", category: cat, message: msgText } };
   }
 
-  // Proker — buat/tambah proker baru
+  // Proker — buat/tambah proker baru (hanya jika ada judul yang jelas)
   if (
     (lowerMsg.includes("proker") || lowerMsg.includes("program kerja")) &&
     (lowerMsg.includes("buat") || lowerMsg.includes("tambah") || lowerMsg.includes("bikin"))
   ) {
     const today = new Date().toISOString().split("T")[0];
+    const afterColon = message.indexOf(":");
+    let title = "";
+    let desc = message;
+    if (afterColon !== -1) {
+      title = message.substring(afterColon + 1).split(",")[0].trim();
+      desc = message.substring(afterColon + 1).trim();
+    } else {
+      title = message.replace(/^(buat|tambah|bikin)\s+(proker|program\s*kerja)[:\s-]*/i, "").trim();
+    }
+
+    if (!title || title.length < 5 || title.toLowerCase() === "baru" || title.toLowerCase() === "dong") {
+      return { type: "NONE", data: {} };
+    }
+
     return {
       type: "CREATE_PROGRAM",
       data: {
-        title: message.replace(/^(buat|tambah|bikin)\s+(proker|program\s*kerja)[:\s-]*/i, "").trim() || "Program Kerja Baru",
-        description: message,
+        title,
+        description: desc,
         event_date: today,
         division_id: "div-psdam",
         created_by: "Pengurus",
@@ -450,7 +518,7 @@ async function parseActionIntent(
     };
   }
 
-  // Kas / Keuangan — catat kas masuk/keluar
+  // Kas / Keuangan — catat kas masuk/keluar (wajib ada nominal nyata)
   if (
     (lowerMsg.includes("catat") || lowerMsg.includes("simpan")) &&
     (lowerMsg.includes("kas") || lowerMsg.includes("masuk") || lowerMsg.includes("keluar") || lowerMsg.includes("uang"))
@@ -458,6 +526,11 @@ async function parseActionIntent(
     const isIncome = lowerMsg.includes("masuk") || lowerMsg.includes("pemasukan") || lowerMsg.includes("iuran");
     const numMatch = message.replace(/[.,]/g, "").match(/\d+/);
     const amount = numMatch ? parseInt(numMatch[0], 10) : 0;
+
+    if (amount <= 0) {
+      return { type: "NONE", data: {} };
+    }
+
     return {
       type: "CREATE_FINANCIAL",
       data: {
@@ -469,12 +542,15 @@ async function parseActionIntent(
     };
   }
 
-  // Pengumuman — buat/rilis pengumuman
+  // Pengumuman — buat/rilis pengumuman (wajib ada isi pengumuman)
   if (
     (lowerMsg.includes("buat pengumuman") || lowerMsg.includes("rilis pengumuman") || lowerMsg.includes("posting pengumuman"))
   ) {
     const afterColon = message.indexOf(":");
-    const content = afterColon !== -1 ? message.substring(afterColon + 1).trim() : message;
+    const content = afterColon !== -1 ? message.substring(afterColon + 1).trim() : "";
+    if (!content || content.length < 15) {
+      return { type: "NONE", data: {} };
+    }
     return {
       type: "CREATE_ANNOUNCEMENT",
       data: {
@@ -487,11 +563,15 @@ async function parseActionIntent(
 
   // Prestasi / Bakat
   if (lowerMsg.includes("daftarkan prestasi") || lowerMsg.includes("catat bakat") || lowerMsg.includes("daftar bakat")) {
+    const talentText = message.replace(/^(daftarkan prestasi|catat bakat|daftar bakat)[:\s-]*/i, "").trim();
+    if (!talentText || talentText.length < 5 || talentText.toLowerCase() === "dong") {
+      return { type: "NONE", data: {} };
+    }
     return {
       type: "CREATE_TALENT",
       data: {
-        student_name: "Mahasiswa",
-        talent: message.replace(/^(daftarkan prestasi|catat bakat|daftar bakat)[:\s-]*/i, "").trim() || "Bakat Umum",
+        student_name: "",
+        talent: talentText,
         achievement: "Peserta",
       },
     };
@@ -563,11 +643,18 @@ async function executeAction(
 ): Promise<{ success: boolean; record?: any; refreshModules: string[] }> {
   const today = new Date().toISOString().split("T")[0];
 
+  // Gunakan nama akun login resmi (username/name), jangan gunakan generic "Mahasiswa" atau "Anonim"
+  const accountName = (userName && userName.trim() && userName !== "Mahasiswa" && userName !== "Anonim")
+    ? userName.trim()
+    : (action.data?.student_name && action.data.student_name !== "Mahasiswa" && action.data.student_name !== "Anonim")
+      ? action.data.student_name
+      : (userName?.trim() || "Pengguna");
+
   switch (action.type) {
     case "CREATE_ASPIRATION": {
       const record = await prisma.aspiration.create({
         data: {
-          student_name: action.data.student_name || userName || "Anonim",
+          student_name: accountName,
           category: action.data.category || "Lainnya",
           message: action.data.message,
           status: "pending",
@@ -594,12 +681,12 @@ async function executeAction(
           status: "planning",
           approval_status: "pending",
           division_id: divisionId,
-          created_by: action.data.created_by || userName || "Pengurus",
+          created_by: accountName,
         },
       });
       await prisma.activityLog.create({
         data: {
-          detail: `Program kerja baru diajukan: '${record.title}'`,
+          detail: `Program kerja baru diajukan oleh ${accountName}: '${record.title}'`,
           time: "Baru saja",
           color: "green",
         },
@@ -618,7 +705,7 @@ async function executeAction(
       });
       await prisma.activityLog.create({
         data: {
-          detail: `Pengumuman resmi diterbitkan: '${record.title}'`,
+          detail: `Pengumuman resmi diterbitkan oleh ${accountName}: '${record.title}'`,
           time: "Baru saja",
           color: "blue",
         },
@@ -642,7 +729,7 @@ async function executeAction(
       });
       await prisma.activityLog.create({
         data: {
-          detail: `Kas ${type === "income" ? "masuk" : "keluar"} dicatat: '${record.title}'`,
+          detail: `Kas ${type === "income" ? "masuk" : "keluar"} dicatat oleh ${accountName}: '${record.title}'`,
           time: "Baru saja",
           color: type === "income" ? "green" : "red",
         },
@@ -653,7 +740,7 @@ async function executeAction(
     case "CREATE_TALENT": {
       const record = await prisma.talent.create({
         data: {
-          student_name: action.data.student_name || userName || "Mahasiswa",
+          student_name: accountName,
           talent: action.data.talent,
           achievement: action.data.achievement || "Peserta Perlombaan",
           certificate: "Sertifikat.pdf",
@@ -777,6 +864,21 @@ Saya di sini untuk membantu rekan-rekan mahasiswa dan pengurus dalam mendapatkan
 
   // 3. Aspirasi & Advokasi
   if (q.includes("aspirasi") || q.includes("advokasi") || q.includes("keluhan") || q.includes("saran") || q.includes("kritik")) {
+    if (isIntentWithoutDetails(message) || q.includes("mau") || q.includes("ngajuin") || q.includes("kirim") || q.includes("ajukan") || q.includes("cara")) {
+      return `### 💡 Layanan Pengajuan Aspirasi Mahasiswa POINTER
+
+Halo! 👋 Tentu saja, kamu bisa menyampaikan aspirasi, masukan, keluhan fasilitas, atau saran perkuliahan langsung melalui saya.
+
+Agar aspirasimu dapat dicatat dan ditindaklanjuti secara resmi oleh pengurus Divisi PSDAM, silakan tuliskan pesan dengan rincian:
+• **Kategori:** (Akademik / Fasilitas / Beasiswa / Kegiatan / Lainnya)
+• **Isi Aspirasi:** (Jelaskan rincian keluhan, kritik, atau saran perbaikan kamu)
+
+*Contoh format pengiriman langsung:*
+> *"Saya mau mengajukan aspirasi fasilitas: Stopkontak di lab komputer 2 banyak yang rusak, mohon segera diganti."*
+
+Silakan ketik aspirasimu sekarang ya! 😊`;
+    }
+
     const list = db.aspirations.length > 0
       ? db.aspirations
         .slice(0, 5)
@@ -962,15 +1064,18 @@ function classifyMessage(msg: string): MessageTier {
   if (q.length < 35 && chitchatPatterns.some((re) => re.test(q))) return "chit-chat";
 
   // Tier 3 — Action Keywords (deteksi cepat sebelum intent parsing)
-  const actionKeywords = [
-    "ngajuin aspirasi", "kirim aspirasi", "ajukan aspirasi", "mau aspirasi",
-    "buat proker", "tambah proker", "bikin proker",
-    "catat kas", "simpan kas", "catat pemasukan", "catat pengeluaran",
-    "buat pengumuman", "rilis pengumuman",
-    "daftarkan prestasi", "catat bakat",
-    "hapus", "delete", "drop",
-  ];
-  if (actionKeywords.some((kw) => q.includes(kw))) return "action";
+  // JANGAN klasifikasikan sebagai aksi jika hanya pernyataan niat tanpa rincian!
+  if (!isIntentWithoutDetails(msg)) {
+    const actionKeywords = [
+      "ngajuin aspirasi", "kirim aspirasi", "ajukan aspirasi", "mau aspirasi",
+      "buat proker", "tambah proker", "bikin proker",
+      "catat kas", "simpan kas", "catat pemasukan", "catat pengeluaran",
+      "buat pengumuman", "rilis pengumuman",
+      "daftarkan prestasi", "catat bakat",
+      "hapus", "delete", "drop",
+    ];
+    if (actionKeywords.some((kw) => q.includes(kw))) return "action";
+  }
 
   // Tier 1 — Simple Info (kunci kata spesifik seputar HIMA, website, proker, pengurus, dsb)
   const simpleInfoKeywords = [
