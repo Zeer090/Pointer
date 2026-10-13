@@ -171,11 +171,6 @@ export default function Sidebar({
               icon: <BarChart2 size={16} />,
             },
             {
-              id: "programs",
-              label: "Program Kerja",
-              icon: <Calendar size={16} />,
-            },
-            {
               id: "aspirasi",
               label: "Aspirasi Saya",
               icon: <MessageSquare size={16} />,

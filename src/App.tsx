@@ -1806,9 +1806,15 @@ export default function App() {
           )}
 
           {/* SHARED PROGRAMS REGISTER */}
-          {currentPage === "programs" && (
-            <div className="bg-dark-surface border border-dark-border p-6 rounded-2xl space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dark-border pb-4">
+          {currentPage === "programs" && (() => {
+            if (currentUser.role === "mahasiswa") {
+              setTimeout(() => setCurrentPage("dashboard"), 50);
+              return null;
+            }
+
+            return (
+              <div className="bg-dark-surface border border-dark-border p-6 rounded-2xl space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dark-border pb-4">
                 <div>
                   <h3 className="font-display font-medium text-white">
                     Arsip Program Kerja Himpunan
@@ -1953,9 +1959,10 @@ export default function App() {
                       })}
                   </tbody>
                 </table>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* MANAGE USERS PANEL (Admin only) */}
           {currentPage === "users" && (
