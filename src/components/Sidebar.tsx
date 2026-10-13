@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
+  QrCode,
 } from "lucide-react";
 import pointerLogo from "../assets/images/pointer_logo_clean_1780038118432.png";
 
@@ -171,6 +172,12 @@ export default function Sidebar({
               id: "lomba",
               label: "Daftar Perlombaan",
               icon: <Trophy size={16} />,
+            },
+            {
+              id: "presensi",
+              label: "Presensi Kegiatan",
+              icon: <QrCode size={16} />,
+              badge: "QR Code",
             },
             {
               id: "shop",

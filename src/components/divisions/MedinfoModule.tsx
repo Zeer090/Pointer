@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Announcement, ContentCalendar, GalleryAlbum } from "../../types";
-import { Film, Calendar, Megaphone, Image as ImageIcon, Send, Volume2, Plus, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
+import { Film, Calendar, Megaphone, Image as ImageIcon, Send, Volume2, Plus, ChevronLeft, ChevronRight, AlertTriangle, Sparkles, Copy, Check } from "lucide-react";
 
 interface MedinfoModuleProps {
   announcements: Announcement[];
@@ -104,6 +104,41 @@ export default function MedinfoModule({
   const [albumTitle, setAlbumTitle] = useState("");
   const [albumEmoji, setAlbumEmoji] = useState("");
   const [albumLink, setAlbumLink] = useState("");
+
+  // AI Caption Generator state
+  const [aiCaptionLoading, setAiCaptionLoading] = useState(false);
+  const [aiCaptionError, setAiCaptionError] = useState("");
+  const [generatedCaption, setGeneratedCaption] = useState("");
+  const [captionCopied, setCaptionCopied] = useState(false);
+
+  const handleAICaption = async () => {
+    if (!postTitle.trim()) return;
+    setAiCaptionLoading(true);
+    setAiCaptionError("");
+    setGeneratedCaption("");
+    try {
+      const res = await fetch("/api/ai/caption", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ postTitle, platform: postPlatform }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal generate caption.");
+      setGeneratedCaption(data.caption);
+    } catch (err: any) {
+      setAiCaptionError(err.message || "Terjadi kesalahan.");
+    } finally {
+      setAiCaptionLoading(false);
+    }
+  };
+
+  const handleCopyCaption = () => {
+    if (!generatedCaption) return;
+    navigator.clipboard.writeText(generatedCaption);
+    setCaptionCopied(true);
+    setTimeout(() => setCaptionCopied(false), 2000);
+  };
 
   // Default to June 2026 (matching system context)
   const [currentMonth, setCurrentMonth] = useState(5); // 0-indexed (June = 5)
@@ -472,7 +507,41 @@ export default function MedinfoModule({
                 >
                   <Send size={12} /> Jadwalkan
                 </button>
+                <button
+                  type="button"
+                  onClick={handleAICaption}
+                  disabled={aiCaptionLoading || !postTitle.trim()}
+                  title="Generate caption AI untuk platform ini"
+                  className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs px-3 py-1.5 rounded font-semibold transition flex items-center gap-1 active:scale-95"
+                >
+                  {aiCaptionLoading ? (
+                    <span className="animate-spin inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full" />
+                  ) : (
+                    <Sparkles size={12} />
+                  )}
+                  AI
+                </button>
               </div>
+
+              {/* AI Caption Preview Panel */}
+              {generatedCaption && (
+                <div className="bg-purple-900/10 border border-purple-800/30 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-purple-400 font-mono uppercase flex items-center gap-1">
+                      <Sparkles size={10} /> Caption AI untuk {postPlatform}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyCaption}
+                      className="text-[10px] flex items-center gap-1 text-gray-400 hover:text-white transition"
+                    >
+                      {captionCopied ? <><Check size={10} className="text-green-400" /> Tersalin!</> : <><Copy size={10} /> Salin</>}
+                    </button>
+                  </div>
+                  <pre className="text-xs text-gray-300 whitespace-pre-wrap font-sans leading-relaxed max-h-48 overflow-y-auto">{generatedCaption}</pre>
+                </div>
+              )}
+              {aiCaptionError && <p className="text-red-400 text-[10px] font-mono">{aiCaptionError}</p>}
             </form>
           )}
         </div>

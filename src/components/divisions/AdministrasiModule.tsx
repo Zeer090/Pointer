@@ -1,27 +1,60 @@
 import React, { useState } from "react";
 import { Notulensi, Attendance, User, Letter } from "../../types";
-import { FileText, Mail, Calendar, Archive, BellRing, Plus, Sparkles, FolderOpen, Search, Clipboard, Download, FileSpreadsheet } from "lucide-react";
+import { FileText, Mail, Calendar, Archive, BellRing, Plus, Sparkles, FolderOpen, Search, Clipboard, Download, FileSpreadsheet, QrCode } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExcelJS from "exceljs";
 import logoPolinela from "../../assets/images/Logo Polinela BARU (1).png";
 import logoMI from "../../assets/images/pointer_logo_clean_1780038118432.png";
+import AttendanceQrModal from "../AttendanceQrModal";
 
 interface AdministrasiModuleProps {
   notulensi: Notulensi[];
   attendances: Attendance[];
   users: User[];
   letters: Letter[];
+  programs?: Array<{ id: string; title: string }>;
+  currentUser?: User | null;
   onSubmitNotulensi: (title: string, summary: string, author: string) => void;
   onSubmitAttendance: (event: string, name: string, status: "Hadir" | "Izin" | "Sakit" | "Alpa", npm: string) => void;
   onSubmitLetter: (num: string, subject: string, type: string, date: string, handler: string, file_name: string | null) => void;
+  onAttendanceSuccess?: (attendance: Attendance) => void;
 }
 
-export default function AdministrasiModule({ notulensi, attendances, users, letters, onSubmitNotulensi, onSubmitAttendance, onSubmitLetter }: AdministrasiModuleProps) {
+export default function AdministrasiModule({ notulensi, attendances, users, letters, programs = [], currentUser = null, onSubmitNotulensi, onSubmitAttendance, onSubmitLetter, onAttendanceSuccess }: AdministrasiModuleProps) {
   const [notTitle, setNotTitle] = useState("");
   const [notAuthor, setNotAuthor] = useState("Ririn Agustina");
   const [notSummary, setNotSummary] = useState("");
   const [notSearch, setNotSearch] = useState("");
+
+  // AI state for notulensi summarizer
+  const [notRawNotes, setNotRawNotes] = useState("");
+  const [aiNotLoading, setAiNotLoading] = useState(false);
+  const [aiNotError, setAiNotError] = useState("");
+  const [showRawNotesInput, setShowRawNotesInput] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+
+  const handleAISummarize = async () => {
+    if (!notRawNotes.trim()) return;
+    setAiNotLoading(true);
+    setAiNotError("");
+    try {
+      const res = await fetch("/api/ai/summarize-notulensi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ rawNotes: notRawNotes, title: notTitle }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengambil ringkasan AI.");
+      setNotSummary(data.summary);
+      setShowRawNotesInput(false);
+    } catch (err: any) {
+      setAiNotError(err.message || "Terjadi kesalahan.");
+    } finally {
+      setAiNotLoading(false);
+    }
+  };
 
   const [attEvent, setAttEvent] = useState("Rapat Koordinasi Mingguan");
   const [attUser, setAttUser] = useState("");
@@ -809,14 +842,53 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-mono uppercase text-gray-500">Rangkuman Hasil Putusan (Point per Point)</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-mono uppercase text-gray-500">Rangkuman Hasil Putusan</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowRawNotesInput(v => !v)}
+                    className="text-[10px] flex items-center gap-1 text-purple-400 hover:text-purple-300 transition font-mono"
+                  >
+                    <Sparkles size={11} />
+                    {showRawNotesInput ? "Tutup AI" : "✨ AI Summarize"}
+                  </button>
+                </div>
+
+                {/* AI Raw Notes Input Panel */}
+                {showRawNotesInput && (
+                  <div className="space-y-2 bg-purple-900/10 border border-purple-800/30 rounded-lg p-3">
+                    <div className="text-[10px] text-purple-400 font-mono uppercase flex items-center gap-1">
+                      <Sparkles size={10} /> Ketik Catatan Rapat Mentah (AI akan meringkas otomatis)
+                    </div>
+                    <textarea
+                      placeholder="Cth: Pak Budi bilang PIC konsumsi digeser ke Medinfo. Deadline lomba perpanjang 12 Juni. Rapat depan offline Selasa..."
+                      className="w-full bg-dark-bg border border-purple-800/40 rounded px-3 py-2 text-xs text-white h-28 focus:outline-none focus:border-purple-500 resize-none"
+                      value={notRawNotes}
+                      onChange={(e) => setNotRawNotes(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAISummarize}
+                      disabled={aiNotLoading || !notRawNotes.trim()}
+                      className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold py-2 rounded transition flex items-center justify-center gap-1.5"
+                    >
+                      {aiNotLoading ? (
+                        <><span className="animate-spin inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full" /> Memproses AI...</>
+                      ) : (
+                        <><Sparkles size={12} /> Generate Notulensi dengan AI</>
+                      )}
+                    </button>
+                    {aiNotError && <p className="text-red-400 text-[10px] font-mono">{aiNotError}</p>}
+                  </div>
+                )}
+
                 <textarea
                   placeholder="1. Pembagian PIC konsumsi dialihkan ke Medinfo&#10;2. Batas akhir pendaftaran lomba diperpanjang sampai 12 Juni&#10;3. Rapat berikutnya diadakan offline hari Selasa."
                   className="w-full bg-dark-bg border border-dark-border rounded px-3 py-2 text-xs text-white h-36 focus:outline-none focus:border-brand-orange resize-none"
                   value={notSummary}
                   onChange={(e) => setNotSummary(e.target.value)}
                   required
-                ></textarea>
+                />
               </div>
 
               <button
@@ -826,6 +898,7 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
                 <Plus size={14} /> Simpan Hasil Notulen
               </button>
             </form>
+
           </div>
         </div>
       )}
@@ -835,9 +908,41 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* INPUT PRESENSI */}
           <div className="bg-dark-surface border border-dark-border rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-5 border-b border-dark-border pb-4">
-              <Clipboard className="text-brand-orange" size={20} />
-              <h3 className="font-display font-bold text-lg text-white">Input Presensi Kehadiran</h3>
+            <div className="flex items-center justify-between gap-2 mb-5 border-b border-dark-border pb-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Clipboard className="text-brand-orange" size={20} />
+                <h3 className="font-display font-bold text-lg text-white">Presensi Kehadiran</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQrModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-lg bg-brand-orange hover:bg-brand-orange-hover text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-orange-500/20"
+              >
+                <QrCode size={14} /> Layar QR Code
+              </button>
+            </div>
+
+            {/* BANNER PROMOSI QR CODE INTERAKTIF */}
+            <div className="mb-5 p-4 rounded-xl bg-gradient-to-r from-orange-500/15 via-dark-bg to-dark-surface border border-orange-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+              <div>
+                <div className="flex items-center gap-2 text-white font-display font-bold text-sm">
+                  <QrCode size={18} className="text-brand-orange" />
+                  <span>Sistem Presensi QR Code Digital</span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-green-500/20 text-green-400 border border-green-500/30">
+                    Auto-Verify
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">
+                  Buka layar proyektor ber-QR Code untuk rapat/kegiatan atau input kehadiran mandiri.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQrModalOpen(true)}
+                className="px-3 py-2 rounded-xl bg-dark-bg border border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shrink-0"
+              >
+                <QrCode size={14} /> Buka Layar QR
+              </button>
             </div>
 
             <form onSubmit={handleAttSubmit} className="space-y-3 bg-dark-bg/40 p-4 border border-dark-border rounded-lg mb-5">
@@ -1188,6 +1293,18 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
           </div>
         </div>
       )}
+
+      {/* MODAL QR CODE PRESENSI DIGITAL */}
+      <AttendanceQrModal
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        currentUser={currentUser}
+        programsList={programs}
+        recentAttendances={attendances}
+        onAttendanceSuccess={(newAtt) => {
+          if (onAttendanceSuccess) onAttendanceSuccess(newAtt);
+        }}
+      />
     </div>
   );
 }

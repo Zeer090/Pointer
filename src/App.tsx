@@ -23,6 +23,7 @@ import {
 // Extracted Sub-Components
 import LandingPage from "./components/LandingPage";
 import Sidebar from "./components/Sidebar";
+import AiChatbot from "./components/AiChatbot";
 import pointerLogo from "./assets/images/pointer_logo_clean_1780038118432.png";
 
 // Divisional Module Panels
@@ -33,6 +34,8 @@ import SosmaModule from "./components/divisions/SosmaModule";
 import KimasModule from "./components/divisions/KimasModule";
 import KeuanganModule from "./components/divisions/KeuanganModule";
 import AdministrasiModule from "./components/divisions/AdministrasiModule";
+
+import AttendanceQrModal from "./components/AttendanceQrModal";
 
 import {
   LogOut,
@@ -50,6 +53,7 @@ import {
   UserPlus,
   Trash2,
   Menu,
+  QrCode,
 } from "lucide-react";
 
 export default function App() {
@@ -83,6 +87,8 @@ export default function App() {
   const [isAddProgramOpen, setIsAddProgramOpen] = useState(false);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isAttendanceQrOpen, setIsAttendanceQrOpen] = useState(false);
+  const [attendanceInitialEvent, setAttendanceInitialEvent] = useState("");
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean;
     title: string;
@@ -159,6 +165,23 @@ export default function App() {
       } catch {}
     }
   }, [currentPage]);
+
+  // Handle #presensi hash from QR Code scans or direct links
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith("#presensi")) {
+        const queryStr = hash.includes("?") ? hash.split("?")[1] : "";
+        const params = new URLSearchParams(queryStr);
+        const eventParam = params.get("event");
+        if (eventParam) setAttendanceInitialEvent(decodeURIComponent(eventParam));
+        setIsAttendanceQrOpen(true);
+      }
+    };
+    handleHash();
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
 
   // Handle browser back/forward (hashchange)
   useEffect(() => {
@@ -2017,10 +2040,121 @@ export default function App() {
               attendances={db.attendances}
               users={db.users}
               letters={db.letters || []}
+              programs={db.programs || []}
+              currentUser={currentUser}
               onSubmitNotulensi={handleAddNotulensi}
               onSubmitAttendance={handleAddAttendance}
               onSubmitLetter={handleAddLetter}
+              onAttendanceSuccess={(newAtt) => {
+                updateDb((prev) => ({
+                  ...prev,
+                  attendances: [newAtt, ...(prev.attendances || [])],
+                }));
+                triggerToast(`Presensi berhasil dicatat: ${newAtt.participant_name} (${newAtt.status})`);
+              }}
             />
+          )}
+
+          {currentPage === "presensi" && (
+            <div className="bg-dark-surface border border-dark-border p-6 rounded-2xl space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dark-border pb-4">
+                <div>
+                  <h3 className="font-display font-black text-white text-lg flex items-center gap-2">
+                    <QrCode className="text-brand-orange" size={20} />
+                    Presensi & Kehadiran Kegiatan HIMA
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Verifikasi kehadiran resmi untuk rapat pleno, workshop, dan agenda HIMA POINTER.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsAttendanceQrOpen(true)}
+                  className="px-4 py-2.5 rounded-xl bg-brand-orange hover:bg-brand-orange-hover text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-orange-500/20 shrink-0"
+                >
+                  <QrCode size={16} /> Buka Presensi Digital (QR Code)
+                </button>
+              </div>
+
+              {/* CARD RINGKASAN */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-dark-bg/60 border border-dark-border rounded-xl p-4">
+                  <div className="text-[11px] font-mono text-gray-400 uppercase">Riwayat Kehadiran Saya</div>
+                  <div className="text-2xl font-bold font-display text-white mt-1">
+                    {db.attendances?.filter((a) => a.participant_name === currentUser?.name || a.npm === currentUser?.npm).length || 0} Kali
+                  </div>
+                  <div className="text-[11px] text-green-400 mt-1">Tercatat di sistem</div>
+                </div>
+                <div className="bg-dark-bg/60 border border-dark-border rounded-xl p-4">
+                  <div className="text-[11px] font-mono text-gray-400 uppercase">Status Akun</div>
+                  <div className="text-xl font-bold font-display text-brand-orange mt-1 truncate">
+                    {currentUser?.name || "Mahasiswa"}
+                  </div>
+                  <div className="text-[11px] text-gray-400 mt-1 font-mono">NPM: {currentUser?.npm || "Terdaftar"}</div>
+                </div>
+                <div className="bg-dark-bg/60 border border-dark-border rounded-xl p-4">
+                  <div className="text-[11px] font-mono text-gray-400 uppercase">Total Presensi Sistem</div>
+                  <div className="text-2xl font-bold font-display text-blue-400 mt-1">
+                    {db.attendances?.length || 0} Data
+                  </div>
+                  <div className="text-[11px] text-gray-400 mt-1">Tersimpan di basis data</div>
+                </div>
+              </div>
+
+              {/* TABEL KEHADIRAN */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-gray-400">
+                    Daftar Presensi Terkini di Himpunan:
+                  </h4>
+                  <span className="text-[11px] font-mono text-brand-orange">
+                    Menampilkan 15 data terbaru
+                  </span>
+                </div>
+                <div className="overflow-x-auto rounded-xl border border-dark-border">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-[#151921] text-gray-400 font-mono text-[10px] uppercase">
+                      <tr>
+                        <th className="p-3">Tanggal</th>
+                        <th className="p-3">Agenda Kegiatan</th>
+                        <th className="p-3">Nama Peserta</th>
+                        <th className="p-3">NPM</th>
+                        <th className="p-3 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-dark-border bg-dark-bg/40">
+                      {(db.attendances || []).slice(0, 15).map((att) => (
+                        <tr key={att.id} className="hover:bg-white/[0.02] transition">
+                          <td className="p-3 text-gray-400 font-mono">{att.date}</td>
+                          <td className="p-3 font-semibold text-white">{att.event_name}</td>
+                          <td className="p-3 text-gray-300">{att.participant_name}</td>
+                          <td className="p-3 text-gray-400 font-mono">{att.npm}</td>
+                          <td className="p-3 text-right">
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                att.status === "Hadir"
+                                  ? "bg-green-500/15 text-green-400 border border-green-500/30"
+                                  : att.status === "Izin"
+                                  ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                                  : "bg-yellow-500/15 text-yellow-400 border border-yellow-500/30"
+                              }`}
+                            >
+                              {att.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {(!db.attendances || db.attendances.length === 0) && (
+                        <tr>
+                          <td colSpan={5} className="p-8 text-center text-gray-500">
+                            Belum ada catatan presensi di sistem. Klik tombol "Buka Presensi Digital" untuk memulai!
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* MAHASISWA ONLY DIRECT PAGES */}
@@ -2410,13 +2544,38 @@ export default function App() {
 
       {/* INTERACTIVE TOAST FEEDBACK NOTIFICATION */}
       {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-dark-surface border border-brand-orange/30 text-white text-xs px-5 py-3.5 rounded-xl shadow-2xl shadow-black/80 transition-all duration-300">
+        <div className="fixed bottom-6 left-6 z-50 flex items-center gap-3 bg-dark-surface border border-brand-orange/30 text-white text-xs px-5 py-3.5 rounded-xl shadow-2xl shadow-black/80 transition-all duration-300">
           <div className="w-6 h-6 rounded-full bg-brand-orange/20 flex items-center justify-center flex-shrink-0">
             <ShieldCheck size={13} className="text-brand-orange" />
           </div>
           <span className="font-medium">{toastMsg}</span>
         </div>
       )}
+
+      {/* FLOATING AI ASSISTANT CHATBOT */}
+      <AiChatbot
+        db={db}
+        currentUser={currentUser}
+        onRefreshDb={refreshDb}
+        onToast={triggerToast}
+      />
+
+      {/* GLOBAL ATTENDANCE QR MODAL */}
+      <AttendanceQrModal
+        isOpen={isAttendanceQrOpen}
+        onClose={() => setIsAttendanceQrOpen(false)}
+        currentUser={currentUser}
+        programsList={db?.programs || []}
+        recentAttendances={db?.attendances || []}
+        initialEventName={attendanceInitialEvent}
+        onAttendanceSuccess={(newAtt) => {
+          updateDb((prev) => ({
+            ...prev,
+            attendances: [newAtt, ...(prev.attendances || [])],
+          }));
+          triggerToast(`Presensi berhasil dicatat: ${newAtt.participant_name} (${newAtt.status})`);
+        }}
+      />
     </div>
   );
 }

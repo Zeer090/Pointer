@@ -1,8 +1,11 @@
+import "dotenv/config";
 import express from "express";
 import path from "path";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { GoogleGenAI } from "@google/genai";
+import { processAiChat, fetchLiveDatabaseFromPostgres, warmupAiCache } from "./aiKnowledgeEngine";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
@@ -773,6 +776,61 @@ app.post(
   },
 );
 
+// Self-Checkin Presensi Digital (Mahasiswa / Peserta scan QR Code atau input mandiri)
+app.post("/api/attendances/self-checkin", async (req, res) => {
+  try {
+    const { event_name, participant_name, npm, status = "Hadir" } = req.body;
+
+    if (!event_name?.trim() || !participant_name?.trim()) {
+      return res.status(400).json({ error: "Nama agenda dan nama peserta wajib diisi." });
+    }
+
+    const cleanNpm = (npm || "").trim() || `2201${Math.floor(Math.random() * 900 + 100)}`;
+    const today = new Date().toISOString().split("T")[0];
+
+    // Cek duplikasi kehadiran pada agenda dan hari yang sama
+    const existing = await prisma.attendance.findFirst({
+      where: {
+        event_name: event_name.trim(),
+        npm: cleanNpm,
+        date: today,
+      },
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        error: "Sudah Presensi",
+        message: `Halo ${participant_name}, Anda sudah tercatat presensi (${existing.status}) pada agenda '${event_name}' hari ini!`,
+        attendance: existing,
+      });
+    }
+
+    const newAtt = await prisma.attendance.create({
+      data: {
+        event_name: event_name.trim(),
+        participant_name: participant_name.trim(),
+        status: status || "Hadir",
+        npm: cleanNpm,
+        date: today,
+      },
+    });
+
+    await logActivity(
+      `Presensi mandiri (QR): ${participant_name.trim()} (${cleanNpm}) hadir pada agenda ${event_name.trim()}`,
+      "green"
+    );
+
+    res.json({
+      success: true,
+      message: "Presensi berhasil dicatat! Kehadiran Anda telah terverifikasi secara resmi.",
+      attendance: newAtt,
+    });
+  } catch (err: any) {
+    console.error("[Attendance Error]", err?.message);
+    res.status(500).json({ error: "Gagal memproses presensi mandiri." });
+  }
+});
+
 // Record Notulensi (Administrasi)
 app.post(
   "/api/notulensi",
@@ -965,6 +1023,216 @@ app.post(
 );
 
 // =====================================
+// AI ROUTES (CONNECTED TO POSTGRESQL PRISMA)
+// =====================================
+
+let genAI: GoogleGenAI | null = null;
+function getGenAI(): GoogleGenAI {
+  if (!genAI) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not configured in .env file.");
+    }
+    genAI = new GoogleGenAI({ apiKey });
+  }
+  return genAI;
+}
+
+const GEMINI_MODELS = [
+  "gemini-3.8-flash",
+  "gemini-flash-latest",
+  "gemini-3.5-flash",
+  "gemini-3.1-flash-lite",
+];
+
+function withTimeout<T>(promise: Promise<T>, ms: number, timeoutMsg: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(timeoutMsg)), ms)),
+  ]);
+}
+
+async function generateWithFallback(contents: any, systemInstruction?: string, timeoutMs = 8000): Promise<string> {
+  const ai = getGenAI();
+  let lastError: any = null;
+
+  for (const model of GEMINI_MODELS) {
+    try {
+      const config: any = {};
+      if (systemInstruction) {
+        config.systemInstruction = systemInstruction;
+      }
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model,
+          contents,
+          config: Object.keys(config).length > 0 ? config : undefined,
+        }),
+        timeoutMs,
+        `Timeout pada ${model}`
+      );
+
+      const text = response.candidates?.[0]?.content?.parts?.[0]?.text || response.text || "";
+      if (text?.trim()) return text.trim();
+    } catch (err: any) {
+      console.warn(`[AI Model Fallback] Model ${model} (${err?.status || err?.message}). Mencoba model cadangan...`);
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error("Semua model AI sedang sibuk. Silakan coba kembali beberapa saat lagi.");
+}
+
+// Endpoint Inspection: Memeriksa database real-time yang dipelajari oleh AI Agent
+app.get("/api/ai/knowledge", async (_req, res) => {
+  try {
+    const liveDb = await fetchLiveDatabaseFromPostgres(prisma);
+    res.json({ success: true, knowledge: liveDb });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message });
+  }
+});
+
+// Endpoint Chatbot: AI Agent terhubung langsung ke PostgreSQL Database (Prisma)
+app.post("/api/ai/chat", async (req, res) => {
+  try {
+    const { message, history, context } = req.body;
+    if (!message?.trim()) {
+      return res.status(400).json({ error: "Pesan tidak boleh kosong." });
+    }
+
+    const ai = getGenAI();
+    const result = await processAiChat(prisma, ai, message, history, context);
+    res.json({
+      success: true,
+      reply: result.reply,
+      actionExecuted: result.actionExecuted,
+      refreshModules: result.refreshModules,
+    });
+  } catch (err: any) {
+    console.error("[AI Chat Error]", err?.message);
+    res.status(500).json({ error: err?.message || "Gagal memproses pesan AI." });
+  }
+});
+
+// Endpoint 1: AI Summarize Notulensi
+app.post("/api/ai/summarize-notulensi", authenticate, async (req, res) => {
+  try {
+    const { rawNotes, title } = req.body;
+    if (!rawNotes?.trim()) {
+      return res.status(400).json({ error: "Catatan rapat tidak boleh kosong." });
+    }
+
+    const prompt = `Kamu adalah sekretaris profesional HIMA POINTER (Himpunan Mahasiswa Manajemen Informatika).
+Tugasmu adalah mengubah catatan rapat mentah berikut menjadi notulensi rapat yang terstruktur, ringkas, dan formal.
+
+Judul Rapat: ${title || "Tidak disebutkan"}
+
+Catatan Mentah:
+${rawNotes}
+
+Format output notulensi WAJIB mengikuti struktur ini (gunakan bahasa Indonesia formal):
+1. KEPUTUSAN RAPAT: (daftar keputusan utama, minimal 2-3 poin)
+2. TINDAK LANJUT: (siapa PIC untuk setiap poin, dengan deadline jika ada)
+3. CATATAN TAMBAHAN: (informasi penting lainnya jika ada)
+
+Jawab langsung dengan isi notulensi saja, tanpa pengantar atau penutup tambahan.`;
+
+    const summary = await generateWithFallback([
+      { role: "user", parts: [{ text: prompt }] },
+    ]);
+
+    res.json({ success: true, summary });
+  } catch (err: any) {
+    console.error("[AI Notulensi Error]", err?.message);
+    res.status(500).json({ error: err?.message || "Gagal menghubungi AI." });
+  }
+});
+
+// Endpoint 2: AI Broadcast Message Generator
+app.post("/api/ai/broadcast", authenticate, async (req, res) => {
+  try {
+    const { category, title, date, time, location, division, notes } = req.body;
+    if (!title) {
+      return res.status(400).json({ error: "Judul/topik acara wajib diisi." });
+    }
+
+    const prompt = `Kamu adalah admin media sosial profesional HIMA POINTER, Himpunan Mahasiswa Program Studi Manajemen Informatika Politeknik Negeri Lampung.
+
+Buat pesan broadcast ${category || "pengumuman"} dalam format WhatsApp yang profesional, hangat, dan sesuai budaya mahasiswa Islam.
+
+Detail Acara:
+- Judul/Topik: ${title}
+- Jenis Acara: ${category || "Rapat / Kegiatan"}
+- Tanggal: ${date || "[belum ditentukan]"}
+- Waktu: ${time ? time + " WIB" : "[belum ditentukan]"}
+- Lokasi: ${location || "[belum ditentukan]"}
+- Ditujukan untuk: ${division ? "Divisi " + division : "Seluruh Anggota HIMA POINTER"}
+- Catatan khusus: ${notes || "-"}
+
+Aturan format:
+- Awali dengan Assalamu'alaikum Warahmatullahi Wabarakatuh
+- Gunakan format poin yang jelas (hari/tanggal, waktu, tempat, kegiatan)
+- Tutup dengan Wassalamu'alaikum dan tanda tangan "HIMA POINTER - Manajemen Informatika Polinela"
+- Tambahkan 5 hashtag relevan di baris terakhir
+- Maksimal 300 kata
+
+Tulis hanya isi pesan broadcast saja, tanpa penjelasan tambahan.`;
+
+    const message = await generateWithFallback([
+      { role: "user", parts: [{ text: prompt }] },
+    ]);
+
+    res.json({ success: true, message });
+  } catch (err: any) {
+    console.error("[AI Broadcast Error]", err?.message);
+    res.status(500).json({ error: err?.message || "Gagal menghubungi AI." });
+  }
+});
+
+// Endpoint 3: AI Caption Generator untuk Medinfo
+app.post("/api/ai/caption", authenticate, async (req, res) => {
+  try {
+    const { postTitle, platform, topic } = req.body;
+    if (!postTitle) {
+      return res.status(400).json({ error: "Judul konten wajib diisi." });
+    }
+
+    const platformStyle: Record<string, string> = {
+      "Instagram Feed": "caption Instagram yang menarik, pakai emoji, maksimal 150 kata, diakhiri dengan 10-15 hashtag relevan",
+      "Instagram Story": "teks Story Instagram yang singkat, impactful, maksimal 2-3 kalimat, pakai 3-5 emoji",
+      "TikTok": "caption TikTok yang catchy dan trending, pakai kata-kata Gen Z, maksimal 100 kata + 5 hashtag viral",
+      "LinkedIn": "caption LinkedIn yang profesional dan inspiratif, maksimal 200 kata, fokus ke value dan pencapaian",
+      "WhatsApp Blast": "pesan broadcast WhatsApp yang informal namun informatif, maksimal 150 kata, pakai poin-poin",
+    };
+
+    const style = platformStyle[platform] || "caption media sosial yang engaging dan informatif";
+
+    const prompt = `Kamu adalah content creator profesional HIMA POINTER (Himpunan Mahasiswa Manajemen Informatika Politeknik Negeri Lampung).
+
+Buat ${style} untuk konten berikut:
+
+Judul Konten: ${postTitle}
+Platform: ${platform || "Media Sosial"}
+Konteks Tambahan: ${topic || "kegiatan HIMA mahasiswa informatika"}
+
+Tone: Youthful, engaging, dan mencerminkan semangat mahasiswa informatika.
+Bahasa: Indonesia (boleh campur bahasa Inggris secukupnya untuk engagement).
+
+Tulis hanya isi caption saja, tanpa penjelasan tambahan.`;
+
+    const caption = await generateWithFallback([
+      { role: "user", parts: [{ text: prompt }] },
+    ]);
+
+    res.json({ success: true, caption });
+  } catch (err: any) {
+    console.error("[AI Caption Error]", err?.message);
+    res.status(500).json({ error: err?.message || "Gagal menghubungi AI." });
+  }
+});
+
+// =====================================
 // VITE OR STATIC MIDDLEWARE SETUP
 // =====================================
 
@@ -988,6 +1256,7 @@ async function startServer() {
     console.log(
       `POINTER SYSTEM server successfully booted on http://localhost:${PORT}`,
     );
+    warmupAiCache(prisma);
   });
 }
 

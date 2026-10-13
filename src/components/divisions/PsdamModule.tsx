@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Aspiration, User } from "../../types";
-import { MessageSquare, Users, CheckCircle2, ArrowRight, ShieldCheck, HeartPulse, Send } from "lucide-react";
+import { MessageSquare, Users, CheckCircle2, ArrowRight, ShieldCheck, HeartPulse, Send, Sparkles } from "lucide-react";
 
 interface PsdamModuleProps {
   aspirations: Aspiration[];
@@ -35,6 +35,38 @@ export default function PsdamModule({
     const text = encodeURIComponent(broadcastMessage);
     const url = `https://api.whatsapp.com/send?text=${text}`;
     window.open(url, '_blank');
+  };
+
+  // AI Broadcast Generator state
+  const [aiBroadcastLoading, setAiBroadcastLoading] = useState(false);
+  const [aiBroadcastError, setAiBroadcastError] = useState("");
+
+  const handleAIBroadcast = async () => {
+    if (!meetingCategory) return;
+    setAiBroadcastLoading(true);
+    setAiBroadcastError("");
+    try {
+      const res = await fetch("/api/ai/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          category: meetingCategory,
+          title: meetingType || meetingCategory,
+          date: meetingDate,
+          time: meetingTime,
+          location: meetingLocation,
+          division: meetingDivision,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal generate broadcast.");
+      setBroadcastMessage(data.message);
+    } catch (err: any) {
+      setAiBroadcastError(err.message || "Terjadi kesalahan.");
+    } finally {
+      setAiBroadcastLoading(false);
+    }
   };
 
   const formatIndonesianDate = (dateStr: string) => {
@@ -378,8 +410,20 @@ Email : mi@polinela.ac.id
                   onClick={generateMeetingCaption}
                   className="w-full bg-brand-orange/20 hover:bg-brand-orange/30 text-brand-orange border border-brand-orange/50 py-2 rounded text-xs font-semibold transition"
                 >
-                  Generate Caption
+                  Generate Caption (Template)
                 </button>
+                <button
+                  onClick={handleAIBroadcast}
+                  disabled={aiBroadcastLoading}
+                  className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white border border-purple-500 py-2 rounded text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                >
+                  {aiBroadcastLoading ? (
+                    <><span className="animate-spin inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full" /> Memproses AI...</>
+                  ) : (
+                    <><Sparkles size={12} /> ✨ AI Generate Broadcast</>
+                  )}
+                </button>
+                {aiBroadcastError && <p className="text-red-400 text-[10px] font-mono mt-1">{aiBroadcastError}</p>}
               </div>
             </div>
             
