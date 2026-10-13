@@ -905,105 +905,44 @@ export default function AdministrasiModule({ notulensi, attendances, users, lett
 
       {/* SUBTAB: PRESENSI */}
       {activeSubTab === "presensi" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* INPUT PRESENSI */}
-          <div className="bg-dark-surface border border-dark-border rounded-xl p-6">
-            <div className="flex items-center justify-between gap-2 mb-5 border-b border-dark-border pb-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <Clipboard className="text-brand-orange" size={20} />
-                <h3 className="font-display font-bold text-lg text-white">Presensi Kehadiran</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsQrModalOpen(true)}
-                className="px-3.5 py-1.5 rounded-lg bg-brand-orange hover:bg-brand-orange-hover text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-orange-500/20"
-              >
-                <QrCode size={14} /> Layar QR Code
-              </button>
-            </div>
-
-            {/* BANNER PROMOSI QR CODE INTERAKTIF */}
-            <div className="mb-5 p-4 rounded-xl bg-gradient-to-r from-orange-500/15 via-dark-bg to-dark-surface border border-orange-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
-              <div>
-                <div className="flex items-center gap-2 text-white font-display font-bold text-sm">
-                  <QrCode size={18} className="text-brand-orange" />
-                  <span>Sistem Presensi QR Code Digital</span>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-green-500/20 text-green-400 border border-green-500/30">
-                    Auto-Verify
-                  </span>
+        <div className="space-y-6">
+          {/* HEADER: TOMBOL QR & INFO */}
+          <div className="bg-dark-surface border border-dark-border rounded-xl p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-brand-orange/15 border border-brand-orange/30 text-brand-orange">
+                  <QrCode size={20} />
                 </div>
-                <p className="text-xs text-gray-400 mt-1">
-                  Buka layar proyektor ber-QR Code untuk rapat/kegiatan atau input kehadiran mandiri.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsQrModalOpen(true)}
-                className="px-3 py-2 rounded-xl bg-dark-bg border border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shrink-0"
-              >
-                <QrCode size={14} /> Buka Layar QR
-              </button>
-            </div>
-
-            <form onSubmit={handleAttSubmit} className="space-y-3 bg-dark-bg/40 p-4 border border-dark-border rounded-lg mb-5">
-              <div className="text-xs font-mono text-gray-400 uppercase tracking-wider">Catat Kehadiran Manual</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
-                  <input
-                    type="text"
-                    placeholder="Nama Pengurus/Anggota"
-                    className="w-full bg-dark-bg border border-dark-border rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-orange"
-                    value={attUser}
-                    onChange={(e) => setAttUser(e.target.value)}
-                    list="membersList-adm"
-                    required
-                  />
-                  <datalist id="membersList-adm">
-                    {users.map(u => <option key={u.id} value={u.name} />)}
-                  </datalist>
+                  <h3 className="font-display font-bold text-base text-white">Sistem Presensi QR Digital</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">Buat QR → tampilkan di proyektor → peserta scan → presensi otomatis tercatat</p>
                 </div>
-                <select
-                  className="bg-dark-bg border border-dark-border rounded px-3 py-1.5 text-xs text-white focus:outline-none"
-                  value={attStatus}
-                  onChange={(e: any) => setAttStatus(e.target.value)}
-                >
-                  <option value="Hadir">Hadir</option>
-                  <option value="Izin">Izin</option>
-                  <option value="Sakit">Sakit</option>
-                  <option value="Alpa">Alpa</option>
-                </select>
               </div>
-              <input
-                type="text"
-                placeholder="Nama Rapat / Agenda"
-                className="w-full bg-dark-bg border border-dark-border rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-orange"
-                value={attEvent}
-                onChange={(e) => setAttEvent(e.target.value)}
-                required
-              />
               <button
-                type="submit"
-                className="w-full bg-brand-orange/10 hover:bg-brand-orange/20 border border-brand-orange/20 text-brand-orange rounded text-xs py-1.5 font-semibold transition"
+                type="button"
+                onClick={() => setIsQrModalOpen(true)}
+                className="px-4 py-2.5 rounded-xl bg-brand-orange hover:bg-brand-orange-hover text-white text-xs font-bold transition flex items-center gap-2 shadow-md shadow-orange-500/20 shrink-0"
               >
-                Catat Kehadiran
+                <QrCode size={14} /> Buat QR Code Presensi
               </button>
-            </form>
-
-            {/* Ringkasan statistik (Data Terfilter) */}
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { label: "Hadir", color: "green", count: filteredAtts.filter(a => a.status === "Hadir").length },
-                { label: "Izin", color: "blue", count: filteredAtts.filter(a => a.status === "Izin").length },
-                { label: "Sakit", color: "yellow", count: filteredAtts.filter(a => a.status === "Sakit").length },
-                { label: "Alpa", color: "red", count: filteredAtts.filter(a => a.status === "Alpa").length },
-              ].map(s => (
-                <div key={s.label} className={`bg-${s.color}-500/5 border border-${s.color}-500/20 rounded-lg p-3 text-center`}>
-                  <div className={`text-xl font-display font-bold text-${s.color}-400`}>{s.count}</div>
-                  <div className={`text-[10px] font-mono text-${s.color}-500 mt-1`}>{s.label}</div>
-                </div>
-              ))}
             </div>
           </div>
+
+          {/* RINGKASAN STATISTIK */}
+          <div className="grid grid-cols-4 gap-3">
+            {[
+              { label: "Hadir", color: "green", count: filteredAtts.filter(a => a.status === "Hadir").length },
+              { label: "Izin", color: "blue", count: filteredAtts.filter(a => a.status === "Izin").length },
+              { label: "Sakit", color: "yellow", count: filteredAtts.filter(a => a.status === "Sakit").length },
+              { label: "Alpa", color: "red", count: filteredAtts.filter(a => a.status === "Alpa").length },
+            ].map(s => (
+              <div key={s.label} className={`bg-${s.color}-500/5 border border-${s.color}-500/20 rounded-lg p-3 text-center`}>
+                <div className={`text-2xl font-display font-bold text-${s.color}-400`}>{s.count}</div>
+                <div className={`text-[10px] font-mono text-${s.color}-500 mt-1`}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
 
           {/* TABEL PRESENSI */}
           <div className="bg-dark-surface border border-dark-border rounded-xl p-6">

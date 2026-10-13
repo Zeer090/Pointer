@@ -160,7 +160,7 @@ export default function Sidebar({
         },
       ];
     } else {
-      // Mahasiswa Umum
+      // Mahasiswa Umum - Presensi hanya via scan QR, tidak muncul di sidebar
       return [
         {
           section: "Akses Mahasiswa",
@@ -184,12 +184,6 @@ export default function Sidebar({
               id: "lomba",
               label: "Daftar Perlombaan",
               icon: <Trophy size={16} />,
-            },
-            {
-              id: "presensi",
-              label: "Presensi Kegiatan",
-              icon: <QrCode size={16} />,
-              badge: "QR Code",
             },
             {
               id: "shop",

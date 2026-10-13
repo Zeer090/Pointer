@@ -2101,112 +2101,124 @@ export default function App() {
             />
           )}
 
-          {currentPage === "presensi" && (
-            <div className="bg-dark-surface border border-dark-border p-6 rounded-2xl space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dark-border pb-4">
-                <div>
-                  <h3 className="font-display font-black text-white text-lg flex items-center gap-2">
-                    <QrCode className="text-brand-orange" size={20} />
-                    Presensi & Kehadiran Kegiatan HIMA
-                  </h3>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Verifikasi kehadiran resmi untuk rapat pleno, workshop, dan agenda HIMA POINTER.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    onClick={() => {
-                      setAttendanceInitialEvent("");
-                      setIsAttendanceQrOpen(true);
-                    }}
-                    className="px-4 py-2.5 rounded-xl bg-brand-orange hover:bg-brand-orange-hover text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-orange-500/20 shrink-0"
-                  >
-                    <QrCode size={16} /> Buat QR Code (Layar Proyektor)
-                  </button>
-                </div>
-              </div>
+          {currentPage === "presensi" && (() => {
+            const isPrivilegedUser = currentUser?.role === "admin" || currentUser?.role === "divisi";
 
-              {/* CARD RINGKASAN */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-dark-bg/60 border border-dark-border rounded-xl p-4">
-                  <div className="text-[11px] font-mono text-gray-400 uppercase">Riwayat Kehadiran Saya</div>
-                  <div className="text-2xl font-bold font-display text-white mt-1">
-                    {db.attendances?.filter((a) => a.participant_name === currentUser?.name || a.npm === currentUser?.npm).length || 0} Kali
-                  </div>
-                  <div className="text-[11px] text-green-400 mt-1">Tercatat di sistem</div>
-                </div>
-                <div className="bg-dark-bg/60 border border-dark-border rounded-xl p-4">
-                  <div className="text-[11px] font-mono text-gray-400 uppercase">Status Akun</div>
-                  <div className="text-xl font-bold font-display text-brand-orange mt-1 truncate">
-                    {currentUser?.name || "Mahasiswa"}
-                  </div>
-                  <div className="text-[11px] text-gray-400 mt-1 font-mono">NPM: {currentUser?.npm || "Terdaftar"}</div>
-                </div>
-                <div className="bg-dark-bg/60 border border-dark-border rounded-xl p-4">
-                  <div className="text-[11px] font-mono text-gray-400 uppercase">Total Presensi Sistem</div>
-                  <div className="text-2xl font-bold font-display text-blue-400 mt-1">
-                    {db.attendances?.length || 0} Data
-                  </div>
-                  <div className="text-[11px] text-gray-400 mt-1">Tersimpan di basis data</div>
-                </div>
-              </div>
+            // Mahasiswa tidak bisa buka halaman ini langsung — harus scan QR
+            if (!isPrivilegedUser) {
+              // Redirect ke dashboard
+              setTimeout(() => setCurrentPage("dashboard"), 50);
+              return null;
+            }
 
-              {/* TABEL KEHADIRAN */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-mono uppercase tracking-wider text-gray-400">
-                    Daftar Presensi Terkini di Himpunan:
-                  </h4>
-                  <span className="text-[11px] font-mono text-brand-orange">
-                    Menampilkan 15 data terbaru
-                  </span>
+            return (
+              <div className="bg-dark-surface border border-dark-border p-6 rounded-2xl space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dark-border pb-4">
+                  <div>
+                    <h3 className="font-display font-black text-white text-lg flex items-center gap-2">
+                      <QrCode className="text-brand-orange" size={20} />
+                      Sistem Presensi QR Digital HIMA
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Buat QR Code untuk rapat/kegiatan, tampilkan di proyektor. Peserta scan → login → presensi otomatis tercatat.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => {
+                        setAttendanceInitialEvent("");
+                        setIsAttendanceQrOpen(true);
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-brand-orange hover:bg-brand-orange-hover text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-orange-500/20 shrink-0"
+                    >
+                      <QrCode size={16} /> Buat QR Code Baru
+                    </button>
+                  </div>
                 </div>
-                <div className="overflow-x-auto rounded-xl border border-dark-border">
-                  <table className="w-full text-xs text-left">
-                    <thead className="bg-[#151921] text-gray-400 font-mono text-[10px] uppercase">
-                      <tr>
-                        <th className="p-3">Tanggal</th>
-                        <th className="p-3">Agenda Kegiatan</th>
-                        <th className="p-3">Nama Peserta</th>
-                        <th className="p-3">NPM</th>
-                        <th className="p-3 text-right">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-dark-border bg-dark-bg/40">
-                      {(db.attendances || []).slice(0, 15).map((att) => (
-                        <tr key={att.id} className="hover:bg-white/[0.02] transition">
-                          <td className="p-3 text-gray-400 font-mono">{att.date}</td>
-                          <td className="p-3 font-semibold text-white">{att.event_name}</td>
-                          <td className="p-3 text-gray-300">{att.participant_name}</td>
-                          <td className="p-3 text-gray-400 font-mono">{att.npm}</td>
-                          <td className="p-3 text-right">
-                            <span
-                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                att.status === "Hadir"
-                                  ? "bg-green-500/15 text-green-400 border border-green-500/30"
-                                  : att.status === "Izin"
-                                  ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                                  : "bg-yellow-500/15 text-yellow-400 border border-yellow-500/30"
-                              }`}
-                            >
-                              {att.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                      {(!db.attendances || db.attendances.length === 0) && (
+
+                {/* CARD RINGKASAN */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-dark-bg/60 border border-dark-border rounded-xl p-4">
+                    <div className="text-[11px] font-mono text-gray-400 uppercase">Total Peserta Hadir</div>
+                    <div className="text-2xl font-bold font-display text-green-400 mt-1">
+                      {db.attendances?.filter((a) => a.status === "Hadir").length || 0}
+                    </div>
+                    <div className="text-[11px] text-green-400 mt-1">Data Hadir</div>
+                  </div>
+                  <div className="bg-dark-bg/60 border border-dark-border rounded-xl p-4">
+                    <div className="text-[11px] font-mono text-gray-400 uppercase">Total Presensi Hari Ini</div>
+                    <div className="text-2xl font-bold font-display text-brand-orange mt-1">
+                      {db.attendances?.filter((a) => a.date === new Date().toISOString().split("T")[0]).length || 0}
+                    </div>
+                    <div className="text-[11px] text-gray-400 mt-1">Hari ini</div>
+                  </div>
+                  <div className="bg-dark-bg/60 border border-dark-border rounded-xl p-4">
+                    <div className="text-[11px] font-mono text-gray-400 uppercase">Total Rekap Sistem</div>
+                    <div className="text-2xl font-bold font-display text-blue-400 mt-1">
+                      {db.attendances?.length || 0}
+                    </div>
+                    <div className="text-[11px] text-gray-400 mt-1">Semua data tersimpan</div>
+                  </div>
+                </div>
+
+                {/* TABEL REKAP KEHADIRAN */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-mono uppercase tracking-wider text-gray-400">
+                      Rekap Presensi (Semua Data via QR Scan):
+                    </h4>
+                    <span className="text-[11px] font-mono text-brand-orange">
+                      {db.attendances?.length || 0} total data
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto rounded-xl border border-dark-border">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-[#151921] text-gray-400 font-mono text-[10px] uppercase">
                         <tr>
-                          <td colSpan={5} className="p-8 text-center text-gray-500">
-                            Belum ada catatan presensi di sistem. Klik tombol "Buka Presensi Digital" untuk memulai!
-                          </td>
+                          <th className="p-3">Tanggal</th>
+                          <th className="p-3">Agenda Kegiatan</th>
+                          <th className="p-3">Nama Peserta</th>
+                          <th className="p-3">NPM</th>
+                          <th className="p-3 text-right">Status</th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-dark-border bg-dark-bg/40">
+                        {(db.attendances || []).slice(0, 50).map((att) => (
+                          <tr key={att.id} className="hover:bg-white/[0.02] transition">
+                            <td className="p-3 text-gray-400 font-mono">{att.date}</td>
+                            <td className="p-3 font-semibold text-white">{att.event_name}</td>
+                            <td className="p-3 text-gray-300">{att.participant_name}</td>
+                            <td className="p-3 text-gray-400 font-mono">{att.npm}</td>
+                            <td className="p-3 text-right">
+                              <span
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                  att.status === "Hadir"
+                                    ? "bg-green-500/15 text-green-400 border border-green-500/30"
+                                    : att.status === "Izin"
+                                    ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                                    : "bg-yellow-500/15 text-yellow-400 border border-yellow-500/30"
+                                }`}
+                              >
+                                {att.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        {(!db.attendances || db.attendances.length === 0) && (
+                          <tr>
+                            <td colSpan={5} className="p-8 text-center text-gray-500">
+                              <QrCode size={28} className="mx-auto mb-2 text-gray-600" />
+                              Belum ada data presensi. Buat QR Code dan minta peserta untuk scan!
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* MAHASISWA ONLY DIRECT PAGES */}
           {currentPage === "aspirasi" && (
